@@ -1,0 +1,3757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeonWings: Firewall Dive(@askme765cs)</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #121212;
+            margin: 0;
+            padding: 20px;
+            color: white;
+        }
+        
+        h1 {
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #game-container {
+            position: relative;
+            width: 500px;
+            height: 600px;
+            background-image: linear-gradient(to bottom, #1E90FF, #87CEEB);
+            overflow: hidden;
+            border: 2px solid #333;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+            perspective: 1200px;
+            transform-style: preserve-3d;
+        }
+        
+        #game-world {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+        }
+        
+        #bird {
+            position: absolute;
+            width: 40px;
+            height: 30px;
+            background-color: #FFFF00;
+            border-radius: 50% 50% 50% 20%;
+            left: 100px;
+            top: 250px;
+            z-index: 100;
+            transform-style: preserve-3d;
+            transition: transform 0.1s;
+            box-shadow: 0 0 10px rgba(255,255,0,0.5);
+        }
+        
+        /* Bird parts for 3D effect */
+        #bird::before {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 8px;
+            background-color: #FF6600;
+            top: 15px;
+            right: -5px;
+            border-radius: 50% 50% 50% 20%;
+            transform: rotateY(30deg);
+        }
+        
+        #bird::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #FFFFFF;
+            top: 8px;
+            left: 10px;
+            border-radius: 50%;
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .pipe {
+            position: absolute;
+            transform-style: preserve-3d;
+            z-index: 5;
+        }
+        
+        .pipe-main {
+            position: absolute;
+            background-color: #3CB371;
+            border: 2px solid #228B22;
+            transform-style: preserve-3d;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+        
+        .pipe-side {
+            position: absolute;
+            background-color: #2E8B57;
+            transform-style: preserve-3d;
+        }
+        
+        .obstacle {
+            position: absolute;
+            transform-style: preserve-3d;
+            z-index: 5;
+        }
+        
+        .obstacle-main {
+            position: absolute;
+            background-color: #FF6347;
+            border: 2px solid #B22222;
+            transform-style: preserve-3d;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(255,99,71,0.3);
+        }
+        
+        .coin {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            background-color: #FFD700;
+            border: 2px solid #DAA520;
+            border-radius: 50%;
+            z-index: 6;
+            transform-style: preserve-3d;
+            animation: spin 2s infinite linear;
+            box-shadow: 0 0 15px rgba(255,215,0,0.5);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+        
+        #score-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 2px #000;
+            z-index: 150;
+        }
+        
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 200;
+            width: 280px;
+            box-shadow: 0 0 30px rgba(255,255,255,0.3);
+            border: 1px solid #FFD700;
+            color: white;
+        }
+        
+        #scores-container {
+            width: 500px;
+            margin-top: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 0 15px rgba(255,255,255,0.1);
+        }
+        
+        #high-scores {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+        }
+        
+        #high-scores th, #high-scores td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        #high-scores th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        #high-scores tr:nth-child(even) {
+            background-color: rgba(255,255,255,0.05);
+        }
+        
+        #high-scores tr:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            width: 180px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+        
+        input[type="text"] {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            width: 90%;
+            margin: 15px 0;
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+        }
+        
+        input[type="text"]::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+        
+        #level-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 1px #000;
+            z-index: 150;
+        }
+        
+        #depth-indicator {
+            position: absolute;
+            top: 50px;
+            right: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 1px #000;
+            z-index: 150;
+        }
+        
+        #control-instructions {
+            margin-top: 20px;
+            background-color: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #4CAF50;
+            width: 500px;
+            line-height: 1.6;
+        }
+        
+        #control-instructions h3 {
+            color: #4CAF50;
+            margin-top: 0;
+        }
+        
+        #power-up {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #9370DB;
+            border-radius: 5px;
+            z-index: 70;
+            display: none;
+            animation: pulse 1s infinite alternate;
+            transform-style: preserve-3d;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 10px 2px rgba(147, 112, 219, 0.7); }
+            100% { box-shadow: 0 0 20px 10px rgba(147, 112, 219, 1); }
+        }
+        
+        #shield-indicator {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(100, 149, 237, 0.7);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 150;
+            display: none;
+            box-shadow: 0 0 10px rgba(100, 149, 237, 0.5);
+        }
+        
+        .shielded {
+            box-shadow: 0 0 0 5px rgba(100, 149, 237, 0.7),
+                        0 0 0 10px rgba(100, 149, 237, 0.4),
+                        0 0 20px rgba(100, 149, 237, 0.6) !important;
+        }
+        
+        #info-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            text-shadow: 1px 1px 1px #000;
+            font-size: 14px;
+            z-index: 150;
+            background-color: rgba(0,0,0,0.5);
+            padding: 8px;
+            border-radius: 5px;
+        }
+        
+        /* Ground with perspective */
+        #ground {
+            position: absolute;
+            width: 1000px;
+            height: 1000px;
+            background: repeating-linear-gradient(
+                90deg,
+                #228B22,
+                #228B22 100px,
+                #32CD32 100px,
+                #32CD32 200px
+            );
+            bottom: -750px;
+            left: -250px;
+            transform: rotateX(85deg);
+            transform-style: preserve-3d;
+            z-index: 3;
+            opacity: 0.8;
+        }
+        
+        /* Clouds */
+        .cloud {
+            position: absolute;
+            background-color: rgba(255,255,255,0.8);
+            border-radius: 50%;
+            filter: blur(5px);
+            z-index: 2;
+            transform-style: preserve-3d;
+        }
+        
+        /* 3D layer indicator - Enhanced Airplane Style */
+        #layer-indicator {
+            position: absolute;
+            bottom: 50px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 150;
+            background-color: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3), inset 0 0 5px rgba(100,200,255,0.3);
+        }
+        
+        /* New 3D Attitude Indicator */
+        #attitude-indicator {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle at center, #111, #000);
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 0 5px rgba(100,200,255,0.5);
+            border: 2px solid #444;
+            margin-bottom: 10px;
+        }
+        
+        #horizon {
+            position: absolute;
+            width: 140%;
+            height: 140%;
+            left: -20%;
+            top: -20%;
+            transform-style: preserve-3d;
+            transition: transform 0.2s;
+        }
+        
+        #sky {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(to top, #1E90FF, #00BFFF);
+        }
+        
+        #ground-indicator {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(to bottom, #8B4513, #654321);
+        }
+        
+        #center-mark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background-color: #FFD700;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            box-shadow: 0 0 5px rgba(255,255,255,0.7);
+        }
+        
+        #depth-scale {
+            position: absolute;
+            width: 4px;
+            height: 80%;
+            background-color: rgba(255,255,255,0.2);
+            right: 15px;
+            top: 10%;
+            border-radius: 2px;
+        }
+        
+        #depth-marker {
+            position: absolute;
+            width: 12px;
+            height: 6px;
+            background-color: #FF0000;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 2px;
+            box-shadow: 0 0 4px rgba(255,0,0,0.7);
+            transition: top 0.2s;
+        }
+        
+        #bird-dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background-color: #FFFF00;
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 5px rgba(255,255,0,0.8);
+            z-index: 5;
+        }
+        
+        /* Depth Level Guide Lines */
+        .depth-line {
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background-color: rgba(255,255,255,0.2);
+            left: 0;
+        }
+        
+        .depth-label {
+            position: absolute;
+            right: 25px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.7);
+            transform: translateY(-50%);
+        }
+        
+        #depth-text {
+            font-size: 14px;
+            color: #00BFFF;
+            margin-top: 5px;
+            text-shadow: 0 0 3px rgba(0,0,0,0.8);
+        }
+        
+        /* Grid for depth perception */
+        .depth-grid-line {
+            position: absolute;
+            background-color: rgba(255,255,255,0.08);
+            transform-style: preserve-3d;
+        }
+        
+        /* Enhanced 3D Visual Effect - Depth Shadows */
+        .depth-shadow {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: inset 0 -20px 30px rgba(0,0,0,0.2);
+            pointer-events: none;
+            z-index: 90;
+        }
+        
+        /* NEW STYLES FOR POWER-UPS */
+        .shrink-pill {
+            position: absolute;
+            width: 30px;
+            height: 18px;
+            background: linear-gradient(to right, #4169E1, #87CEFA);
+            border-radius: 10px;
+            z-index: 70;
+            transform-style: preserve-3d;
+            box-shadow: 0 0 15px rgba(65, 105, 225, 0.8);
+            animation: float 2s infinite alternate ease-in-out;
+        }
+        
+        .rocket {
+            position: absolute;
+            width: 35px;
+            height: 20px;
+            background: linear-gradient(to right, #FF4500, #FF6347);
+            border-radius: 5px 15px 15px 5px;
+            z-index: 70;
+            transform-style: preserve-3d;
+            box-shadow: 0 0 15px rgba(255, 69, 0, 0.8);
+            animation: thrust 0.5s infinite alternate;
+        }
+        
+        .rocket::before {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 6px;
+            background-color: #FFFF00;
+            top: 7px;
+            left: -5px;
+            border-radius: 3px 0 0 3px;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.8);
+        }
+        
+        .rocket::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(to left, transparent, #FFFF00, #FF4500);
+            top: 4px;
+            left: -15px;
+            border-radius: 50% 0 0 50%;
+            filter: blur(2px);
+            animation: flame 0.2s infinite alternate;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(5px); }
+        }
+        
+        @keyframes thrust {
+            0% { transform: translateX(0px); }
+            100% { transform: translateX(2px); }
+        }
+        
+        @keyframes flame {
+            0% { width: 12px; opacity: 0.8; left: -15px; }
+            100% { width: 18px; opacity: 1; left: -22px; }
+        }
+        
+        #power-up-notification {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 150;
+            display: none;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            text-align: center;
+        }
+        
+        /* 增加难度显示器的动画效果 */
+        @keyframes pulseEffect {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        #difficulty-display {
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            animation: pulseEffect 2s infinite;
+        }
+        /* 为难度变化添加过渡效果 */
+        #level-name {
+            transition: color 0.5s;
+        }
+        #speed-fill {
+            transition: width 0.5s, background-color 0.5s;
+        }
+
+        /* 火箭效果增强 */
+        .rocket-boost {
+            box-shadow: 0 0 25px rgba(255, 165, 0, 0.8), 0 0 40px rgba(255, 0, 0, 0.6);
+            animation: rocketPulse 0.5s infinite alternate;
+        }
+        
+        @keyframes rocketPulse {
+            0% { box-shadow: 0 0 25px rgba(255, 165, 0, 0.8), 0 0 40px rgba(255, 0, 0, 0.6); }
+            100% { box-shadow: 0 0 35px rgba(255, 165, 0, 1), 0 0 60px rgba(255, 0, 0, 0.8); }
+        }
+        
+        /* Explosion effect */
+        .explosion {
+            position: absolute;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, #FFFF00, #FF4500);
+            border-radius: 50%;
+            z-index: 80;
+            animation: explode 0.5s forwards;
+        }
+        
+        @keyframes explode {
+            0% { width: 0; height: 0; opacity: 0.9; }
+            60% { width: 120px; height: 120px; opacity: 0.8; }
+            100% { width: 160px; height: 160px; opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <h1>NeonWings: Firewall Dive</h1>
+    
+    <div id="game-container">
+        <div id="game-world">
+            <div id="bird"></div>
+            <div id="ground"></div>
+            <!-- Depth grid will be added dynamically -->
+            <!-- Clouds will be dynamically added -->
+        </div>
+        <div id="score-display">Score: 0</div>
+        <div id="level-indicator">Level: 1</div>
+        <div id="depth-indicator">Depth: 0</div>
+        <div id="shield-indicator">SHIELD ACTIVE</div>
+        <div id="power-up"></div>
+        <div id="power-up-notification">Power Up!</div>
+        <div id="info-panel">Coins: 0</div>
+        <div class="depth-shadow"></div>
+        
+        <div id="layer-indicator">
+            <div id="attitude-indicator">
+                <div id="horizon">
+                    <div id="sky"></div>
+                    <div id="ground-indicator"></div>
+                </div>
+                <div id="center-mark"></div>
+                <div id="bird-dot"></div>
+                <div id="depth-scale"></div>
+                <div id="depth-marker"></div>
+                
+                <!-- Depth guide lines -->
+                <div class="depth-line" style="top: 20%;"><span class="depth-label">+80</span></div>
+                <div class="depth-line" style="top: 35%;"><span class="depth-label">+40</span></div>
+                <div class="depth-line" style="top: 50%;"><span class="depth-label">0</span></div>
+                <div class="depth-line" style="top: 65%;"><span class="depth-label">-40</span></div>
+                <div class="depth-line" style="top: 80%;"><span class="depth-label">-80</span></div>
+            </div>
+            <div id="depth-text">Depth: 0</div>
+        </div>
+        
+        <div id="game-over">
+            <h2>Game Over!</h2>
+            <p>Your Score: <span id="final-score">0</span></p>
+            <p>Level Reached: <span id="final-level">1</span></p>
+            <p>Coins Collected: <span id="coins-collected">0</span></p>
+            <p style="color:#FFD700;margin-bottom:15px;">Press Enter to restart</p>
+            <input type="text" id="player-name" placeholder="Enter your name">
+            <button onclick="saveScore()">Save Score</button>
+            <button onclick="resetGame()">Play Again</button>
+        </div>
+    </div>
+    
+    <div id="control-instructions">
+        <h3>操作说明：</h3>
+        <p>
+            <strong>平面移动（当前深度）：</strong><br>
+            W (上移), S (下移), A (左移), D (右移)<br>
+            <strong>深度控制（3D空间）：</strong><br>
+            方向键↑ (上浮), 方向键↓ (下潜)<br>
+            <strong>快速冲刺：</strong> 空格键 (向当前方向快速冲刺)<br>
+            <strong>开始游戏：</strong> 回车键
+        </p>
+        <p>
+            <strong>操作技巧：</strong> 结合平面移动和深度控制，在3D空间中灵活穿梭
+        </p>
+    </div>    
+    
+    <div class="controls">
+        <button id="start-button">Start Game</button>
+        <button id="mute-button">Mute Sound</button>
+    </div>
+    
+    <div id="scores-container">
+        <h2>High Scores</h2>
+        <table id="high-scores">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Name</th>
+                    <th>Score</th>
+                    <th>Level</th>
+                    <th>Coins</th>
+                </tr>
+            </thead>
+            <tbody id="scores-body">
+                <!-- Scores will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Game variables
+        let gameStarted = false;
+        let gameOver = false;
+        let score = 0;
+        let level = 1;
+        let coins = 0;
+        let gravity = 0.2;
+        let horizontalVelocity = 0;
+        let verticalVelocity = 0;
+        let depthVelocity = 0;
+        let horizontalDrag = 0.95;
+        let verticalDrag = 0.95;
+        let depthDrag = 0.95;
+        let pipeSpeed = 2;
+        let obstacles = [];
+        let coins_array = [];
+        let powerUps = [];
+        let clouds = [];
+        let gridLines = [];
+        let hasShield = false;
+        let shieldTime = 0;
+        let isShrunk = false;
+        let shrinkTime = 0;
+        let isRocketing = false;
+        let originalBirdSize = { width: 40, height: 30 };
+        let birdDepth = 0; // Z-coordinate for depth (0 is middle, -100 to 100 range)
+        let soundMuted = false;
+        let gameSpeed = 1.0; // 初始游戏速度
+        
+        // Maximum depth range
+        const MAX_DEPTH = 100;
+        
+        let keys = {
+            forward: false,   // W key - move forward
+            backward: false,  // S key - move backward
+            left: false,      // A key - move left
+            right: false,     // D key - move right
+            up: false,        // Arrow up - increase depth (+Z)
+            down: false,      // Arrow down - decrease depth (-Z)
+            dash: false       // Space - dash
+        };
+        
+        // 声音管理器
+        const SoundManager = {
+            context: null,
+            muted: false,
+            
+            init() {
+                try {
+                    // 创建音频上下文
+                    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.context = new AudioContext();
+                } catch(e) {
+                    console.warn('Web Audio API is not supported in this browser');
+                }
+            },
+            
+            // 播放跳跃/拍打声音
+            playJump() {
+                if (this.muted || !this.context) return;
+                
+                const oscillator = this.context.createOscillator();
+                const gainNode = this.context.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.context.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, this.context.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(440, this.context.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.3, this.context.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.2);
+                
+                oscillator.start();
+                oscillator.stop(this.context.currentTime + 0.2);
+            },
+            
+            // 播放金币收集声音
+            playCoin() {
+                if (this.muted || !this.context) return;
+                
+                const oscillator = this.context.createOscillator();
+                const gainNode = this.context.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.context.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(988, this.context.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(1318, this.context.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.2, this.context.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.2);
+                
+                oscillator.start();
+                oscillator.stop(this.context.currentTime + 0.2);
+            },
+            
+            // 播放能力激活声音
+            playPowerUp() {
+                if (this.muted || !this.context) return;
+                
+                const oscillator = this.context.createOscillator();
+                const gainNode = this.context.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.context.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(262, this.context.currentTime);
+                oscillator.frequency.linearRampToValueAtTime(523, this.context.currentTime + 0.2);
+                oscillator.frequency.linearRampToValueAtTime(784, this.context.currentTime + 0.4);
+                
+                gainNode.gain.setValueAtTime(0.3, this.context.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.4);
+                
+                oscillator.start();
+                oscillator.stop(this.context.currentTime + 0.4);
+            },
+            
+            // 播放爆炸/游戏结束声音
+            playExplosion() {
+                if (this.muted || !this.context) return;
+                
+                const oscillator = this.context.createOscillator();
+                const gainNode = this.context.createGain();
+                const filter = this.context.createBiquadFilter();
+                
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(this.context.destination);
+                
+                oscillator.type = 'sawtooth';
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1000, this.context.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(500, this.context.currentTime + 0.2);
+                filter.frequency.exponentialRampToValueAtTime(100, this.context.currentTime + 0.3);
+                
+                oscillator.frequency.setValueAtTime(100, this.context.currentTime);
+                oscillator.frequency.linearRampToValueAtTime(50, this.context.currentTime + 0.3);
+                
+                gainNode.gain.setValueAtTime(0.5, this.context.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.3);
+                
+                oscillator.start();
+                oscillator.stop(this.context.currentTime + 0.3);
+            },
+            
+            // 切换静音状态
+            toggleMute() {
+                this.muted = !this.muted;
+                return this.muted;
+            }
+        };
+
+        // 在页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化声音管理器
+            SoundManager.init();
+            
+            // 初始化音乐生成器
+            MusicGenerator.init();
+            
+            // 初始化难度系统
+            DifficultySystem.init();
+        });
+
+        // 修改播放声音的函数
+        // 确保playSound函数检查muted状态
+        function playSound(sound) {
+            if (SoundManager.muted) return; // 如果静音则不播放声音
+            
+            if (sound === 'jump') {
+                SoundManager.playJump();
+            } else if (sound === 'coin') {
+                SoundManager.playCoin();
+            } else if (sound === 'powerUp') {
+                SoundManager.playPowerUp();
+            } else if (sound === 'explosion') {
+                SoundManager.playExplosion();
+            }
+        }
+        
+        // Toggle mute function
+        function toggleMute() {
+            const isMuted = SoundManager.toggleMute();
+            document.getElementById('mute-button').textContent = isMuted ? 'Unmute Sound' : 'Mute Sound';
+            MusicGenerator.stop();
+            MusicGenerator.start();
+        }
+        
+        // Attach listener to mute button
+        document.getElementById('mute-button').addEventListener('click', toggleMute);
+
+        let highScores = JSON.parse(localStorage.getItem('flappyBird3DScores')) || [];
+        let obstacleInterval;
+        let coinInterval;
+        let powerUpInterval;
+        let levelUpdateInterval;
+        let cloudInterval;
+        
+        // Game elements
+        const bird = document.getElementById('bird');
+        const gameWorld = document.getElementById('game-world');
+        const gameContainer = document.getElementById('game-container');
+        const scoreDisplay = document.getElementById('score-display');
+        const levelIndicator = document.getElementById('level-indicator');
+        const depthIndicator = document.getElementById('depth-indicator');
+        const depthText = document.getElementById('depth-text');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const finalLevelDisplay = document.getElementById('final-level');
+        const coinsCollectedDisplay = document.getElementById('coins-collected');
+        const shieldIndicator = document.getElementById('shield-indicator');
+        const powerUp = document.getElementById('power-up');
+        const powerUpNotification = document.getElementById('power-up-notification');
+        const infoPanel = document.getElementById('info-panel');
+        const depthMarker = document.getElementById('depth-marker');
+        const horizon = document.getElementById('horizon');
+        const birdDot = document.getElementById('bird-dot');
+        const startButton = document.getElementById('start-button');
+
+        // 添加游戏开始倒计时功能
+        function startGameWithCountdown() {
+            // 清除所有现有游戏元素
+            clearAllGameElements();
+            
+            // 创建倒计时元素
+            const countdown = document.createElement('div');
+            countdown.id = 'game-countdown';
+            countdown.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 100px;
+                color: white;
+                font-weight: bold;
+                text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+                z-index: 1000;
+                transition: transform 0.3s, opacity 0.3s;
+            `;
+            gameContainer.appendChild(countdown);
+            
+            // 开始倒计时
+            let count = 3;
+            countdown.textContent = count;
+            
+            // 倒计时缩放动画效果
+            countdown.style.transform = 'translate(-50%, -50%) scale(1.2)';
+            setTimeout(() => {
+                countdown.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 200);
+            
+            // 播放准备音效
+            playSound('powerUp');
+            
+            const countdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdown.textContent = count;
+                    // 倒计时缩放动画效果
+                    countdown.style.transform = 'translate(-50%, -50%) scale(1.2)';
+                    setTimeout(() => {
+                        countdown.style.transform = 'translate(-50%, -50%) scale(1)';
+                    }, 200);
+                    
+                    // 播放准备音效
+                    playSound('powerUp');
+                } else {
+                    clearInterval(countdownInterval);
+                    countdown.textContent = 'GO!';
+                    countdown.style.color = '#00ff00';
+                    countdown.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                    
+                    // 播放开始音效
+                    playSound('jump');
+                    
+                    // 短暂延迟后移除倒计时并开始游戏
+                    setTimeout(() => {
+                        countdown.remove();
+                        startGame();
+                    }, 500);
+                }
+            }, 1000);
+            
+            // 隐藏开始屏幕和游戏结束屏幕
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+        }
+        
+        // Add event listener to start button
+        startButton.addEventListener('click', function() {
+            startGameWithCountdown();
+        });
+        
+        // Create depth grid for better 3D visualization
+        function createDepthGrid() {
+            // Create depth grid for better 3D perception
+            const gridSpacing = 80;
+            const gridSize = 1000;
+            const gridOffset = -gridSize / 2;
+            
+            // Create horizontal lines
+            for (let z = -MAX_DEPTH; z <= MAX_DEPTH; z += 40) {
+                for (let y = 0; y < gameContainer.clientHeight; y += gridSpacing) {
+                    const line = document.createElement('div');
+                    line.className = 'depth-grid-line';
+                    line.style.width = gridSize + 'px';
+                    line.style.height = '1px';
+                    line.style.top = y + 'px';
+                    line.style.left = gridOffset + 'px';
+                    line.style.transform = `translateZ(${z}px)`;
+                    
+                    gameWorld.appendChild(line);
+                    gridLines.push(line);
+                }
+            }
+            
+            // Create vertical lines
+            for (let z = -MAX_DEPTH; z <= MAX_DEPTH; z += 40) {
+                for (let x = 0; x < gridSize; x += gridSpacing) {
+                    const line = document.createElement('div');
+                    line.className = 'depth-grid-line';
+                    line.style.width = '1px';
+                    line.style.height = gameContainer.clientHeight + 'px';
+                    line.style.top = '0px';
+                    line.style.left = (gridOffset + x) + 'px';
+                    line.style.transform = `translateZ(${z}px)`;
+                    
+                    gameWorld.appendChild(line);
+                    gridLines.push(line);
+                }
+            }
+        }
+        
+        // Update high score display
+        function updateHighScores() {
+            // Sort scores in descending order
+            highScores.sort((a, b) => b.score - a.score);
+            
+            // Keep only top 10 scores
+            highScores = highScores.slice(0, 10);
+            
+            // Save to localStorage
+            localStorage.setItem('flappyBird3DScores', JSON.stringify(highScores));
+            
+            // Update display
+            const scoresBody = document.getElementById('scores-body');
+            scoresBody.innerHTML = '';
+            
+            highScores.forEach((scoreData, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${scoreData.name}</td>
+                    <td>${scoreData.score}</td>
+                    <td>${scoreData.level || 1}</td>
+                    <td>${scoreData.coins || 0}</td>
+                `;
+                scoresBody.appendChild(row);
+            });
+        }
+        
+        // Create clouds for background effect
+        function createClouds() {
+            for (let i = 0; i < 15; i++) {
+                createCloud();
+            }
+        }
+        
+        // 修改云的生成也留出空间
+        function createCloud() {
+            if (!gameStarted) return;
+            
+            const cloud = document.createElement('div');
+            cloud.className = 'cloud';
+            
+            // 获取游戏容器宽度
+            const gameWidth = gameContainer.clientWidth;
+            
+            // 初始位置：屏幕右侧再额外增加一个空白区域
+            const initialPosition = gameWidth + (Math.random() * (gameWidth / 4));
+            cloud.style.left = initialPosition + 'px';
+            
+            // 随机高度位置
+            const maxTop = gameContainer.clientHeight - 100;
+            const cloudTop = Math.floor(Math.random() * maxTop);
+            cloud.style.top = cloudTop + 'px';
+            
+            // 随机大小和透明度
+            const sizeMultiplier = 0.5 + Math.random();
+            cloud.style.transform = `scale(${sizeMultiplier})`;
+            cloud.style.opacity = 0.5 + Math.random() * 0.3;
+            
+            // 随机移动速度
+            const speed = 1 + Math.random() * 2;
+            cloud.dataset.speed = speed;
+            
+            // 添加到游戏容器
+            gameContainer.appendChild(cloud);
+            
+            // 确保云在z-index上在背景
+            cloud.style.zIndex = '-1';
+        }
+        
+        // Move clouds
+        function moveClouds() {
+            clouds.forEach((cloud, index) => {
+                let cloudLeft = parseFloat(window.getComputedStyle(cloud.element).getPropertyValue('left'));
+                cloudLeft -= cloud.speed;
+                
+                if (cloudLeft < -parseFloat(cloud.element.style.width)) {
+                    cloudLeft = gameContainer.clientWidth;
+                }
+                
+                cloud.element.style.left = cloudLeft + 'px';
+            });
+        }
+
+        // 动态BGM生成器
+        const MusicGenerator = {
+            context: null,
+            mainGainNode: null,
+            bassOscillator: null,
+            melodySequencer: null,
+            beatScheduler: null,
+            arpeggioNodes: [],
+            isPlaying: false,
+            tempo: 120, // 初始速度，随游戏难度增加
+            
+            // 音乐基本配置
+            scales: {
+                minor: [0, 2, 3, 5, 7, 8, 10, 12], // 小调音阶
+                major: [0, 2, 4, 5, 7, 9, 11, 12], // 大调音阶
+                pentatonic: [0, 2, 5, 7, 9, 12],  // 五声音阶
+            },
+            currentScale: 'minor',
+            rootNote: 33, // 低A作为根音
+            
+            init() {
+                try {
+                    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.context = new AudioContext();
+                    this.mainGainNode = this.context.createGain();
+                    this.mainGainNode.gain.value = 0.3; // 主音量控制
+                    this.mainGainNode.connect(this.context.destination);
+                    
+                    // 为不同音轨创建增益节点
+                    this.bassGain = this.context.createGain();
+                    this.bassGain.gain.value = 0.5;
+                    this.bassGain.connect(this.mainGainNode);
+                    
+                    this.melodyGain = this.context.createGain();
+                    this.melodyGain.gain.value = 0.2;
+                    this.melodyGain.connect(this.mainGainNode);
+                    
+                    this.arpeggioGain = this.context.createGain();
+                    this.arpeggioGain.gain.value = 0.15;
+                    this.arpeggioGain.connect(this.mainGainNode);
+                    
+                    this.beatGain = this.context.createGain();
+                    this.beatGain.gain.value = 0.3;
+                    this.beatGain.connect(this.mainGainNode);
+                    
+                    // 创建效果器
+                    this.createEffects();
+                } catch(e) {
+                    console.warn('Web Audio API不支持: ', e);
+                }
+            },
+            
+            createEffects() {
+                // 创建滤波器用于音色塑造
+                this.bassFilter = this.context.createBiquadFilter();
+                this.bassFilter.type = 'lowpass';
+                this.bassFilter.frequency.value = 200;
+                this.bassFilter.Q.value = 1;
+                this.bassFilter.connect(this.bassGain);
+                
+                this.melodyFilter = this.context.createBiquadFilter();
+                this.melodyFilter.type = 'bandpass';
+                this.melodyFilter.frequency.value = 1000;
+                this.melodyFilter.Q.value = 2;
+                this.melodyFilter.connect(this.melodyGain);
+                
+                // 创建延迟效果
+                this.delay = this.context.createDelay();
+                this.delay.delayTime.value = 0.25;
+                
+                this.delayFeedback = this.context.createGain();
+                this.delayFeedback.gain.value = 0.3;
+                
+                this.delay.connect(this.delayFeedback);
+                this.delayFeedback.connect(this.delay);
+                this.delay.connect(this.mainGainNode);
+            },
+            
+            // 启动音乐
+            start() {
+                if (SoundManager.muted) return; // 如果静音则不播放声音
+
+                if (this.isPlaying) return;
+                this.isPlaying = true;
+                
+                // 开始各个声部
+                this.startBass();
+                this.startMelody();
+                this.startArpeggio();
+                this.startBeats();
+                
+                console.log("Music started");
+            },
+            
+            // 停止音乐
+            stop() {
+                if (!this.isPlaying) return;
+                this.isPlaying = false;
+                
+                // 停止所有声部
+                if (this.bassOscillator) {
+                    this.bassOscillator.stop();
+                    this.bassOscillator = null;
+                }
+                
+                if (this.melodySequencer) {
+                    clearInterval(this.melodySequencer);
+                    this.melodySequencer = null;
+                }
+                
+                if (this.beatScheduler) {
+                    clearInterval(this.beatScheduler);
+                    this.beatScheduler = null;
+                }
+                
+                // 停止琶音音符
+                this.arpeggioNodes.forEach(node => {
+                    if (node.oscillator) {
+                        node.oscillator.stop();
+                    }
+                });
+                this.arpeggioNodes = [];
+                
+                console.log("Music stopped");
+            },
+            
+            // 基础贝斯音轨
+            startBass() {
+                const bassPattern = [0, 0, 3, 5, 0, 0, 7, 5]; // 贝斯音型
+                let patternIndex = 0;
+                
+                const playNextBassNote = () => {
+                    if (!this.isPlaying) return;
+                    
+                    const noteIndex = bassPattern[patternIndex % bassPattern.length];
+                    const frequency = this.noteToFrequency(this.rootNote + this.scales[this.currentScale][noteIndex]);
+                    
+                    if (this.bassOscillator) {
+                        this.bassOscillator.stop();
+                    }
+                    
+                    this.bassOscillator = this.context.createOscillator();
+                    this.bassOscillator.type = 'sawtooth';
+                    this.bassOscillator.frequency.value = frequency;
+                    this.bassOscillator.connect(this.bassFilter);
+                    this.bassOscillator.start();
+                    
+                    // 音符长度和淡出
+                    const noteLength = 60 / this.tempo * 500; // 半拍的时长
+                    this.bassOscillator.stop(this.context.currentTime + noteLength/1000);
+                    
+                    // 调整滤波器频率以增加动态感
+                    this.bassFilter.frequency.setValueAtTime(100, this.context.currentTime);
+                    this.bassFilter.frequency.exponentialRampToValueAtTime(
+                        200, this.context.currentTime + 0.1
+                    );
+                    
+                    patternIndex++;
+                    
+                    // 每两拍切换一次
+                    setTimeout(playNextBassNote, noteLength);
+                };
+                
+                playNextBassNote();
+            },
+            
+            // 旋律音轨
+            startMelody() {
+                // 旋律音型，使用音阶音级
+                const melodyPattern = [
+                    {note: 7, duration: 1},
+                    {note: 5, duration: 0.5},
+                    {note: 3, duration: 0.5},
+                    {note: 5, duration: 1},
+                    {note: 7, duration: 1},
+                    {note: 10, duration: 2}
+                ];
+                
+                let patternIndex = 0;
+                
+                const playNextMelodyNote = () => {
+                    if (!this.isPlaying) return;
+                    
+                    const noteInfo = melodyPattern[patternIndex % melodyPattern.length];
+                    const noteIndex = noteInfo.note;
+                    const duration = noteInfo.duration;
+                    
+                    // 计算实际频率 (提高八度)
+                    const frequency = this.noteToFrequency(this.rootNote + 12 + this.scales[this.currentScale][noteIndex % this.scales[this.currentScale].length]);
+                    
+                    // 创建旋律音符
+                    const oscillator = this.context.createOscillator();
+                    oscillator.type = 'square';
+                    oscillator.frequency.value = frequency;
+                    
+                    // 创建包络
+                    const envelope = this.context.createGain();
+                    envelope.gain.value = 0;
+                    
+                    oscillator.connect(envelope);
+                    envelope.connect(this.melodyFilter);
+                    envelope.connect(this.delay); // 添加延迟效果
+                    
+                    // 应用ADSR包络
+                    const now = this.context.currentTime;
+                    envelope.gain.setValueAtTime(0, now);
+                    envelope.gain.linearRampToValueAtTime(0.7, now + 0.05); // Attack
+                    envelope.gain.linearRampToValueAtTime(0.3, now + 0.2); // Decay
+                    envelope.gain.setValueAtTime(0.3, now + (60 / this.tempo * duration) - 0.1); // Sustain
+                    envelope.gain.linearRampToValueAtTime(0, now + (60 / this.tempo * duration)); // Release
+                    
+                    oscillator.start();
+                    oscillator.stop(now + (60 / this.tempo * duration));
+                    
+                    patternIndex++;
+                    
+                    // 安排下一个音符
+                    setTimeout(playNextMelodyNote, 60 / this.tempo * 1000 * duration);
+                };
+                
+                playNextMelodyNote();
+            },
+            
+            // 琶音音轨
+            startArpeggio() {
+                const chordProgressions = [
+                    [0, 4, 7], // I 和弦
+                    [5, 9, 12], // IV 和弦
+                    [7, 11, 14], // V 和弦
+                    [3, 7, 10]  // iii 和弦
+                ];
+                
+                let chordIndex = 0;
+                let arpIndex = 0;
+                let lastChordChange = this.context.currentTime;
+                
+                const playArpeggio = () => {
+                    if (!this.isPlaying) return;
+                    
+                    const now = this.context.currentTime;
+                    const beatDuration = 60 / this.tempo;
+                    
+                    // 每8拍换一个和弦
+                    if (now - lastChordChange > beatDuration * 8) {
+                        chordIndex = (chordIndex + 1) % chordProgressions.length;
+                        lastChordChange = now;
+                    }
+                    
+                    // 当前和弦
+                    const chord = chordProgressions[chordIndex];
+                    
+                    // 琶音化的和弦音
+                    const note = chord[arpIndex % chord.length];
+                    const noteFrequency = this.noteToFrequency(this.rootNote + 24 + note); // 再高一个八度
+                    
+                    // 创建琶音音符
+                    const oscillator = this.context.createOscillator();
+                    oscillator.type = 'sine';
+                    oscillator.frequency.value = noteFrequency;
+                    
+                    // 音量包络
+                    const envelope = this.context.createGain();
+                    envelope.gain.value = 0;
+                    
+                    oscillator.connect(envelope);
+                    envelope.connect(this.arpeggioGain);
+                    
+                    // 调整包络
+                    envelope.gain.setValueAtTime(0, now);
+                    envelope.gain.linearRampToValueAtTime(0.5, now + 0.02);
+                    envelope.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.2);
+                    
+                    // 保存节点以便后续可以停止
+                    this.arpeggioNodes.push({
+                        oscillator: oscillator,
+                        envelope: envelope,
+                        stopTime: now + 0.2
+                    });
+                    
+                    // 清理已停止的节点
+                    this.arpeggioNodes = this.arpeggioNodes.filter(node => node.stopTime > now);
+                    
+                    arpIndex++;
+                    
+                    // 下一个音符计时
+                    setTimeout(playArpeggio, beatDuration * 250); // 16分音符
+                };
+                
+                playArpeggio();
+            },
+            
+            // 打击乐音轨
+            startBeats() {
+                let beatCount = 0;
+                
+                const playBeat = () => {
+                    if (!this.isPlaying) return;
+                    
+                    const now = this.context.currentTime;
+                    
+                    // 每4拍图案
+                    if (beatCount % 4 === 0) {
+                        // 低音鼓
+                        this.playKick(now);
+                    }
+                    
+                    // 第2和第4拍的军鼓
+                    if (beatCount % 4 === 1 || beatCount % 4 === 3) {
+                        this.playSnare(now);
+                    }
+                    
+                    // 每拍都有的hi-hat
+                    this.playHiHat(now);
+                    
+                    beatCount++;
+                    
+                    // 安排下一个节拍
+                    setTimeout(playBeat, 60 / this.tempo * 1000);
+                };
+                
+                playBeat();
+            },
+            
+            // 低音鼓声音
+            playKick(time) {
+                const osc = this.context.createOscillator();
+                const gainNode = this.context.createGain();
+                
+                osc.connect(gainNode);
+                gainNode.connect(this.beatGain);
+                
+                // 设置初始频率
+                osc.frequency.setValueAtTime(150, time);
+                osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.3);
+                
+                gainNode.gain.setValueAtTime(0.8, time);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+                
+                osc.start(time);
+                osc.stop(time + 0.3);
+            },
+            
+            // 军鼓声音
+            playSnare(time) {
+                // 噪声组件
+                const bufferSize = this.context.sampleRate * 0.5;
+                const buffer = this.context.createBuffer(1, bufferSize, this.context.sampleRate);
+                const output = buffer.getChannelData(0);
+                
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+                
+                const noise = this.context.createBufferSource();
+                noise.buffer = buffer;
+                
+                const noiseFilter = this.context.createBiquadFilter();
+                noiseFilter.type = 'highpass';
+                noiseFilter.frequency.value = 1000;
+                noise.connect(noiseFilter);
+                
+                const noiseEnvelope = this.context.createGain();
+                noiseFilter.connect(noiseEnvelope);
+                noiseEnvelope.connect(this.beatGain);
+                
+                noiseEnvelope.gain.setValueAtTime(0.7, time);
+                noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+                
+                noise.start(time);
+                noise.stop(time + 0.2);
+            },
+            
+            // 高帽声音
+            playHiHat(time) {
+                const bufferSize = this.context.sampleRate * 0.2;
+                const buffer = this.context.createBuffer(1, bufferSize, this.context.sampleRate);
+                const output = buffer.getChannelData(0);
+                
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+                
+                const hihat = this.context.createBufferSource();
+                hihat.buffer = buffer;
+                
+                const hihatFilter = this.context.createBiquadFilter();
+                hihatFilter.type = 'highpass';
+                hihatFilter.frequency.value = 7000;
+                
+                const hihatEnvelope = this.context.createGain();
+                
+                hihat.connect(hihatFilter);
+                hihatFilter.connect(hihatEnvelope);
+                hihatEnvelope.connect(this.beatGain);
+                
+                hihatEnvelope.gain.setValueAtTime(0.2, time);
+                hihatEnvelope.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+                
+                hihat.start(time);
+                hihat.stop(time + 0.15);
+            },
+            
+            // MIDI音符转频率
+            noteToFrequency(note) {
+                return 440 * Math.pow(2, (note - 69) / 12);
+            },
+            
+            // 更新速度
+            updateTempo(newTempo) {
+                this.tempo = newTempo;
+                console.log("Updated tempo to: " + newTempo);
+            }
+        };
+
+        // 难度级别系统
+        const DifficultySystem = {
+            // 难度级别配置
+            // 赛博朋克美学 和 渐进式挑战设计
+            levels: [
+                { 
+                    name: "[Baby Sitter.exe]",  // 用.exe增强黑客感
+                    speed: 0.6,  // 微调数值
+                    color: "#00FF41",  // 矩阵绿
+                    threshold: 0,
+                    hint: "系统初始化中...",  // 新增提示文本
+                    multiplier: 1.0 
+                },
+                { 
+                    name: "[Casual Player@root]",  // 加入Linux终端元素
+                    speed: 1.4, 
+                    color: "#00FF88",
+                    threshold: 5,
+                    hint: "检测到用户输入...",
+                    effect: "terminalGlitch()",  // 可触发特效函数
+                    multiplier: 1.2
+                },
+                { 
+                    name: "[WARNING: Overclocking]",
+                    speed: 1.8,
+                    color: "#FFFF00",
+                    threshold: 30,
+                    hint: "CPU温度上升↑↑↑",
+                    multiplier: 1.5
+                },
+                { 
+                    name: "[PRO GAMER://admin]",  // 模拟URL路径
+                    speed: 2.2,
+                    color: "#FF6600",
+                    threshold: 90,
+                    hint: "管理员权限激活!",
+                    multiplier: 2.0 
+                },
+                { 
+                    name: "[$$Hacker Mode$$]",  // 用$包裹强化符号感
+                    speed: 2.7,
+                    color: "#FF0000",
+                    threshold: 150,
+                    hint: "防火墙已失效!!!",
+                    effect: "redAlert()",
+                    multiplier: 2.5 
+                },
+                { 
+                    name: "[!!! I AM CRAZY NOW !!!]",  // 对称符号增强视觉冲击
+                    speed: 3.2,  // 终极速度提升
+                    color: "#FF00FF",  // 霓虹粉紫
+                    threshold: 300,
+                    hint: "核心熔毁倒计时: 3...2...1...",
+                    multiplier: 3.0
+                }
+            ],
+            effects: {
+                terminalGlitch: () => {
+                    // 模拟终端文字错乱效果
+                    document.getElementById("level-name").style.textShadow = "0 0 8px #00FF88";
+                },
+                redAlert: () => {
+                    // 红色警报闪烁
+                    gameContainer.style.animation = "redPulse 0.5s infinite";
+                }
+            },
+            // 特效执行器
+            executeEffect(effectString) {
+                // 解析字符串中的函数名（移除括号）
+                const effectName = effectString.replace(/\(\)$/, "");
+                // 检查特效是否存在
+                if (DifficultySystem.effects && 
+                    typeof DifficultySystem.effects[effectName] === "function") {
+                    
+                    DifficultySystem.effects[effectName](); // 执行特效函数
+                    
+                    // 调试输出（可选）
+                    console.log(`[EFFECT] Triggered: ${effectName}`);
+                } else {
+                    console.warn(`[EFFECT] Not found: ${effectName}`);
+                }
+            },
+            
+            currentLevelIndex: 0,
+            baseObstacleInterval: 2000, // 基础障碍物生成间隔
+            baseCoinInterval: 3000,     // 基础金币生成间隔
+            basePowerUpInterval: 10000, // 基础能力道具生成间隔
+            
+            // 初始化难度系统
+            init() {
+                // 创建难度显示UI
+                this.createDifficultyUI();
+                this.updateDifficultyDisplay();
+                console.log("Difficulty system initialized");
+            },
+            
+            // 创建难度显示界面
+            createDifficultyUI() {
+                const difficultyDisplay = document.createElement('div');
+                difficultyDisplay.id = 'difficulty-display';
+                difficultyDisplay.style.cssText = `
+                    position: absolute;
+                    top: 100px;
+                    right: 20px;
+                    background-color: rgba(0, 0, 0, 0.7);
+                    color: white;
+                    padding: 10px;
+                    border-radius: 5px;
+                    font-family: 'Courier New', monospace;
+                    font-size: 14px;
+                    z-index: 100;
+                    text-align: center;
+                    min-width: 150px;
+                    width: fit-content; /* 新增 */
+                    box-sizing: border-box; /* 新增 */
+                    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+                    animation: pulseEffect 2s infinite;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px; // 新增：统一控制子元素垂直间距
+                    padding: 15px; // 增大内边距（原为10px）
+                `;
+                difficultyDisplay.style.display = "flex";
+                difficultyDisplay.style.flexDirection = "column";
+                difficultyDisplay.style.gap = "8px"; // 添加间隙避免元素紧贴
+                
+                const difficultyTitle = document.createElement('div');
+                difficultyTitle.textContent = 'DIFFICULTY';
+                difficultyTitle.style.marginBottom = '5px';
+                difficultyTitle.style.borderBottom = '1px solid #444';
+                difficultyTitle.style.fontSize = '16px';
+                difficultyDisplay.appendChild(difficultyTitle);
+                
+                const levelName = document.createElement('div');
+                levelName.id = 'level-name';
+                levelName.style.fontSize = '18px';
+                levelName.style.fontWeight = 'bold';
+                levelName.style.margin = '5px 0';
+                levelName.style.transition = 'color 0.5s';
+                difficultyDisplay.appendChild(levelName);
+
+                const levelHints = document.createElement('div');
+                levelHints.id = 'level-hints';
+                levelHints.style.fontSize = '16px';
+                levelHints.style.fontWeight = 'bold';
+                levelHints.style.fontStyle = 'italic'
+                levelHints.style.margin = '5px 0';
+                levelHints.style.transition = 'color 0.5s';
+                difficultyDisplay.appendChild(levelHints);
+
+                const scoreMultiplier = document.createElement('div');
+                scoreMultiplier.id = 'score-multiplier';
+                scoreMultiplier.style.fontSize = '14px';
+                scoreMultiplier.style.fontStyle = 'italic'
+                scoreMultiplier.style.margin = '5px 0';
+                scoreMultiplier.style.transition = 'color 0.5s';
+                difficultyDisplay.appendChild(scoreMultiplier);
+                
+                const speedBar = document.createElement('div');
+                speedBar.style.width = '100%';
+                speedBar.style.height = "25px"; // 增大高度
+                speedBar.style.overflow = "visible"; // 避免裁剪子元素
+                speedBar.style.backgroundColor = '#333';
+                speedBar.style.borderRadius = '3px';
+                speedBar.style.overflow = 'hidden';
+                speedBar.style.marginTop = '5px';
+                
+                const speedFill = document.createElement('div');
+                speedFill.id = 'speed-fill';
+                speedFill.style.position = "static"; // 默认值，确保不脱离文档流
+                speedFill.style.width = "20%"; // 宽度仍可控
+                speedFill.style.height = "100%"; // 填满父容器
+                speedFill.style.backgroundColor = '#44FF44';
+                speedFill.style.transition = 'width 0.5s, background-color 0.5s';
+                
+                speedBar.appendChild(speedFill);
+                difficultyDisplay.appendChild(speedBar);
+                
+                document.getElementById('game-container').appendChild(difficultyDisplay);
+                
+                // 添加动画效果的样式
+                if (!document.getElementById('difficultyAnimStyle')) {
+                    const style = document.createElement('style');
+                    style.id = 'difficultyAnimStyle';
+                    style.textContent = `
+                        @keyframes pulseEffect {
+                            0% { transform: scale(1); }
+                            50% { transform: scale(1.05); }
+                            100% { transform: scale(1); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                console.log("Difficulty UI created");
+            },
+            
+            // 更新难度显示
+            updateDifficultyDisplay() {
+                const currentLevel = this.levels[this.currentLevelIndex];
+                const levelNameElement = document.getElementById('level-name');
+                const levelHintsElement = document.getElementById('level-hints');
+                const scoreMultiplierElement = document.getElementById('score-multiplier');
+                const speedFill = document.getElementById('speed-fill');
+                
+                if (levelNameElement && levelHintsElement && scoreMultiplierElement && speedFill) {
+                    levelNameElement.textContent = currentLevel.name;
+                    levelNameElement.style.color = currentLevel.color;
+                    levelHintsElement.textContent = currentLevel.hint;
+                    levelHintsElement.style.color = currentLevel.color;
+                    scoreMultiplierElement.textContent = `$$积分倍率$$：${currentLevel.multiplier} `
+                    scoreMultiplierElement.style.color = 'rgb(255, 215, 0)'; // Gold RGB
+                    if(currentLevel.effect){
+                        this.executeEffect(currentLevel.effect); // 👈 核心特效触发函数
+                    }
+                    
+                    speedFill.style.width = `${(this.currentLevelIndex + 1) * 100 / this.levels.length}%`;
+                    speedFill.style.backgroundColor = currentLevel.color;
+                    
+                    console.log(`Updated difficulty display: ${currentLevel.name}, Speed: ${currentLevel.speed}`);
+                } else {
+                    console.error("Could not find difficulty display elements");
+                }
+            },
+            
+            // 根据分数更新难度等级
+            updateDifficulty(score) {
+                // 查找当前应该处于的难度等级
+                let newLevelIndex = 0;
+                for (let i = this.levels.length - 1; i >= 0; i--) {
+                    if (score >= this.levels[i].threshold) {
+                        newLevelIndex = i;
+                        break;
+                    }
+                }
+                
+                // 难度变化时
+                if (newLevelIndex !== this.currentLevelIndex) {
+                    this.currentLevelIndex = newLevelIndex;
+                    const currentLevel = this.levels[this.currentLevelIndex];
+                    console.log(`Difficulty increased to: ${currentLevel.name}, Speed: ${currentLevel.speed}`);
+                    
+                    // 更新游戏速度
+                    gameSpeed = currentLevel.speed;
+                    
+                    // 更新音乐速度
+                    if (MusicGenerator.isPlaying) {
+                        MusicGenerator.updateTempo(120 + (currentLevel.speed - 1) * 50); // 速度随难度增加
+                    }
+                    
+                    // 更新障碍物生成频率
+                    if (obstacleInterval) {
+                        clearInterval(obstacleInterval);
+                        obstacleInterval = setInterval(createObstacle, this.baseObstacleInterval / currentLevel.speed);
+                    }
+                    
+                    // 更新金币生成频率
+                    if (coinInterval) {
+                        clearInterval(coinInterval);
+                        coinInterval = setInterval(createCoin, this.baseCoinInterval / currentLevel.speed);
+                    }
+                    
+                    // 更新能力道具生成频率
+                    if (powerUpInterval) {
+                        clearInterval(powerUpInterval);
+                        powerUpInterval = setInterval(createRandomPowerUp, this.basePowerUpInterval / currentLevel.speed);
+                    }
+                    
+                    // 更新UI
+                    this.updateDifficultyDisplay();
+                    
+                    // 显示难度提升通知
+                    if (this.currentLevelIndex > 0) {
+                        showPowerUpNotification(`SPEED UP! - ${currentLevel.name}`);
+                        playSound('powerUp');
+                        
+                        // 添加屏幕震动效果
+                        gameContainer.style.animation = 'shake 0.5s';
+                        setTimeout(() => {
+                            gameContainer.style.animation = '';
+                        }, 500);
+                        
+                        // 添加震动动画
+                        if (!document.getElementById('shakeAnimStyle')) {
+                            const style = document.createElement('style');
+                            style.id = 'shakeAnimStyle';
+                            style.textContent = `
+                                @keyframes shake {
+                                    0%, 100% { transform: translateX(0); }
+                                    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                                    20%, 40%, 60%, 80% { transform: translateX(5px); }
+                                }
+                            `;
+                            document.head.appendChild(style);
+                        }
+                    }
+                }
+            }
+        };
+        // Update 3D flight indicator
+        function updateAttitudeIndicator() {
+            // Update depth marker position (vertical bar on right)
+            const depthPercentage = (birdDepth + MAX_DEPTH) / (MAX_DEPTH * 2);
+            const markerPosition = 80 - (depthPercentage * 60); // Scale to 20%-80% range
+            depthMarker.style.top = `${markerPosition}%`;
+            
+            // Update the horizon tilt based on vertical and horizontal velocity
+            const pitchTilt = Math.min(30, Math.max(-30, verticalVelocity * 3)); // -30 to 30 degrees
+            const rollTilt = Math.min(15, Math.max(-15, -horizontalVelocity * 2)); // -15 to 15 degrees
+            
+            horizon.style.transform = `rotateX(${pitchTilt}deg) rotateZ(${rollTilt}deg)`;
+            
+            // Move the bird dot based on velocity
+            const birdDotX = 50 + (horizontalVelocity * 2); // Percentage of container
+            const birdDotY = 50 + (verticalVelocity * 2); // Percentage of container
+            
+            birdDot.style.left = `${birdDotX}%`;
+            birdDot.style.top = `${birdDotY}%`;
+            
+            // Update text displays
+            depthText.textContent = `Depth: ${Math.round(birdDepth)}`;
+            depthIndicator.textContent = `Depth: ${Math.round(birdDepth)}`;
+        }
+        
+        // Initialize high scores and clouds on load
+        updateHighScores();
+        createClouds();
+        createDepthGrid();
+        
+        // Start game
+        // 在开始游戏函数中启动音乐
+        // 修改startGame函数，确保游戏开始时地图是干净的
+        // 在startGame函数中，确保所有物品生成计时器正确启动
+        function startGame() {
+            // 清除所有现有游戏元素，确保干净的开始
+            clearAllGameElements();
+            
+            gameStarted = true;
+            gameOver = false;
+            score = 0;
+            coins = 0;
+            level = 1;
+            
+            // 重置鸟的位置和状态
+            resetBirdPosition();
+            
+            // 重置速度系统
+            gameSpeed = DifficultySystem.levels[0].speed;
+            DifficultySystem.currentLevelIndex = 0;
+            DifficultySystem.updateDifficultyDisplay();
+            
+            // 启动音乐
+            MusicGenerator.start(); 
+            
+            // 更新分数显示
+            updateScore(0);
+
+            // 开始游戏循环
+            gameLoop();
+            requestAnimationFrame(moveObstacles);
+            
+            // 根据当前难度设置生成间隔
+            const currentLevel = DifficultySystem.levels[DifficultySystem.currentLevelIndex];
+            
+            // 设置延迟，为玩家提供初始反应时间
+            // 第一个障碍物生成延迟一秒，给玩家准备时间
+            setTimeout(() => {
+                obstacleInterval = setInterval(createObstacle, DifficultySystem.baseObstacleInterval / currentLevel.speed);
+            }, 1000);
+            
+            // 金币生成计时器
+            setTimeout(() => {
+                coinInterval = setInterval(createCoin, DifficultySystem.baseCoinInterval / currentLevel.speed);
+            }, 1500);
+            
+            // 能力道具生成计时器 - 使用随机能力道具生成器
+            setTimeout(() => {
+                powerUpInterval = setInterval(createRandomPowerUp, DifficultySystem.basePowerUpInterval / currentLevel.speed);
+            }, 3000);
+            
+            cloudInterval = setInterval(createCloud, 5000);
+            
+            // 隐藏游戏结束屏幕
+            gameOverScreen.style.display = 'none';
+            
+            console.log("Game started with clean map");
+        }
+
+        
+        // Game loop
+        function gameLoop() {
+        if (!gameStarted || gameOver) return;
+        
+        // 周期性显示当前游戏速度
+        if (Math.random() < 0.01) { // 大约每100帧输出一次
+            console.log(`Current game speed: ${gameSpeed}, Level: ${DifficultySystem.levels[DifficultySystem.currentLevelIndex].name}`);
+            console.log(`Current score: ${score}, Coins: ${coins}`);
+        }
+
+        // Handle keyboard input - UPDATED FOR NEW CONTROL SCHEME
+        if (keys.forward) verticalVelocity -= 0.5;    // W - move upward
+        if (keys.backward) verticalVelocity += 0.5;   // S - move downward
+        if (keys.left) horizontalVelocity -= 0.5;     // A - move left
+        if (keys.right) horizontalVelocity += 0.5;    // D - move right
+        if (keys.up) depthVelocity += 0.5;            // Arrow Up - move forward in depth (+Z)
+        if (keys.down) depthVelocity -= 0.5;          // Arrow Down - move backward in depth (-Z)
+        
+        // Handle dash
+        if (keys.dash && !keys.dashActive) {
+            keys.dashActive = true;
+            
+            // Dash in the current direction of movement
+            let dashDirection = {x: 0, y: 0, z: 0};
+            let totalVelocity = Math.sqrt(
+                horizontalVelocity * horizontalVelocity + 
+                verticalVelocity * verticalVelocity + 
+                depthVelocity * depthVelocity
+            );
+            
+            // If already moving, dash in that direction
+            if (totalVelocity > 0.5) {
+                dashDirection.x = horizontalVelocity / totalVelocity;
+                dashDirection.y = verticalVelocity / totalVelocity;
+                dashDirection.z = depthVelocity / totalVelocity;
+            } else {
+                // If not moving, dash forward horizontally
+                dashDirection.x = 1;
+            }
+            
+            // Apply dash impulse
+            horizontalVelocity += dashDirection.x * 12;
+            verticalVelocity += dashDirection.y * 12;
+            depthVelocity += dashDirection.z * 12;
+            
+            // Play dash sound
+            playSound('jump');
+            
+            // Visual dash effect
+            bird.style.boxShadow = '0 0 20px rgba(255,255,255,0.8)';
+            setTimeout(() => {
+                bird.style.boxShadow = '';
+                keys.dashActive = false;
+            }, 500);
+        }
+        
+        // Apply drag
+        horizontalVelocity *= horizontalDrag;
+        verticalVelocity *= verticalDrag;
+        depthVelocity *= depthDrag;
+        
+        // Apply gravity - FIXED: Always pull downward
+        verticalVelocity += gravity; // gravity is always positive, pulling down
+        
+        // Limit velocity
+        horizontalVelocity = Math.max(-8, Math.min(8, horizontalVelocity));
+        verticalVelocity = Math.max(-8, Math.min(8, verticalVelocity));
+        depthVelocity = Math.max(-8, Math.min(8, depthVelocity));
+        
+        // Update bird position
+        let birdTop = parseFloat(window.getComputedStyle(bird).getPropertyValue('top'));
+        let birdLeft = parseFloat(window.getComputedStyle(bird).getPropertyValue('left'));
+        
+        birdTop += verticalVelocity;
+        birdLeft += horizontalVelocity;
+        birdDepth += depthVelocity;
+        
+        // If rocketing, force forward movement and center the bird vertically
+        if (isRocketing) {
+            horizontalVelocity = 15; // Fast forward movement
+            birdLeft += horizontalVelocity;
+            
+            // Center the bird vertically
+            // Calculate the target position (center of screen)
+            const targetTop = (gameContainer.clientHeight - bird.clientHeight) / 2;
+            // Smoothly move toward center
+            birdTop = birdTop + (targetTop - birdTop) * 0.1;
+        }
+            
+            // Check boundaries
+            if (birdTop < 0) {
+                birdTop = 0;
+                verticalVelocity = 1;
+            }
+            
+            if (birdTop > gameContainer.clientHeight - bird.clientHeight) {
+                birdTop = gameContainer.clientHeight - bird.clientHeight;
+                verticalVelocity = -1;
+            }
+            
+            if (birdLeft < 0) {
+                birdLeft = 0;
+                horizontalVelocity = 1;
+            }
+            
+            if (birdLeft > gameContainer.clientWidth - bird.clientWidth) {
+                birdLeft = gameContainer.clientWidth - bird.clientWidth;
+                horizontalVelocity = -1;
+            }
+            
+            // Depth boundaries
+            if (birdDepth < -MAX_DEPTH) {
+                birdDepth = -MAX_DEPTH;
+                depthVelocity = 1;
+            }
+            
+            if (birdDepth > MAX_DEPTH) {
+                birdDepth = MAX_DEPTH;
+                depthVelocity = -1;
+            }
+            
+            bird.style.top = birdTop + 'px';
+            bird.style.left = birdLeft + 'px';
+            
+            // Calculate bird rotation based on movement
+            let yRotation = 0;
+            
+            if (Math.abs(horizontalVelocity) > 0.5 || Math.abs(depthVelocity) > 0.5) {
+                yRotation = Math.atan2(horizontalVelocity, depthVelocity) * (180 / Math.PI);
+            }
+            
+            let xRotation = Math.min(30, Math.max(-30, verticalVelocity * 3)); // Pitch up/down based on vertical velocity
+            
+            // Apply 3D transform with enhanced depth effect - add size scaling based on depth
+            const depthScale = 1 - (Math.abs(birdDepth) / (MAX_DEPTH * 3)); // Subtle scale effect
+            
+            // Apply additional scale if bird is shrunk
+            const shrinkScale = isShrunk ? 0.5 : 1;
+            
+            bird.style.transform = `translateZ(${birdDepth}px) rotateY(${yRotation}deg) rotateX(${xRotation}deg) scale(${(depthScale + 0.7) * shrinkScale})`;
+            
+            // Update depth indicator
+            updateAttitudeIndicator();
+            
+            // Move clouds
+            moveClouds();
+            
+            // Update shrink timer if active
+            if (isShrunk) {
+                shrinkTime--;
+                if (shrinkTime <= 0) {
+                    isShrunk = false;
+                    // Reset bird size
+                    bird.style.width = originalBirdSize.width + 'px';
+                    bird.style.height = originalBirdSize.height + 'px';
+                    
+                    // Show notification
+                    showPowerUpNotification('Size back to normal!');
+                }
+            }
+            
+            // Movement and collision detection
+            let birdRect = bird.getBoundingClientRect();
+            
+            // Update shield timer if active
+            if (hasShield) {
+                shieldTime--;
+                if (shieldTime <= 0) {
+                    hasShield = false;
+                    bird.classList.remove('shielded');
+                    shieldIndicator.style.display = 'none';
+                }
+            }
+            
+            // Move obstacles
+            for (let i = 0; i < obstacles.length; i++) {
+                const obstacle = obstacles[i];
+                let obstacleLeft = parseFloat(window.getComputedStyle(obstacle.element).getPropertyValue('left'));
+                
+                // Calculate speed based on depth difference - objects at same depth move at normal speed
+                // Objects farther away in depth move slower (parallex effect)
+                const depthDiffFactor = Math.abs(obstacle.depth - birdDepth) / (MAX_DEPTH * 2);
+                const paralaxSpeedFactor = 1 - depthDiffFactor * 0.7;  // Enhanced paralax effect
+                obstacleLeft -= pipeSpeed * paralaxSpeedFactor;
+                
+                if (obstacleLeft < -obstacle.width) {
+                    // Remove obstacles that are off-screen
+                    if (obstacle.element.parentElement) {
+                        obstacle.element.parentElement.removeChild(obstacle.element);
+                    }
+                    obstacles.splice(i, 1);
+                    i--; // Adjust for the removed element
+                    
+                    // Only increase score if we haven't already scored for this obstacle
+                    if (!obstacle.scored) {
+                        updateScore(1);
+                        scoreDisplay.textContent = 'Score: ' + score;
+                        obstacle.scored = true;
+                    }
+                } else {
+                    obstacle.element.style.left = obstacleLeft + 'px';
+                    
+                    // Check for rocket collision - destroy obstacles
+                    if (isRocketing) {
+                        let obstacleRect = obstacle.element.getBoundingClientRect();
+                        const depthDiff = Math.abs(obstacle.depth - birdDepth);
+                        
+                        if (
+                            depthDiff < 40 && // Slightly wider collision for rocket
+                            birdRect.right > obstacleRect.left && 
+                            birdRect.left < obstacleRect.right && 
+                            birdRect.bottom > obstacleRect.top && 
+                            birdRect.top < obstacleRect.bottom
+                        ) {
+                            // Create explosion effect
+                            createExplosion(obstacleRect.left, obstacleRect.top, obstacle.depth);
+                            
+                            // Play explosion sound
+                            playSound('explosion');
+                            
+                            // Add bonus score
+                            updateScore(2);
+                            scoreDisplay.textContent = 'Score: ' + score;
+                            
+                            // Remove obstacle
+                            if (obstacle.element.parentElement) {
+                                obstacle.element.parentElement.removeChild(obstacle.element);
+                            }
+                            obstacles.splice(i, 1);
+                            i--; // Adjust for the removed element
+                            continue;
+                        }
+                    }
+                    
+                    // Check collision with enhanced 3D depth consideration
+                    if (!hasShield && !isRocketing) {
+                        let obstacleRect = obstacle.element.getBoundingClientRect();
+                        
+                        // Consider depth for collision - only collide if within depth units
+                        const depthDiff = Math.abs(obstacle.depth - birdDepth);
+                        
+                        // FIX: Adjust the collision detection for pipes - use a smaller collision box
+                        // based on the actual obstacle type and not just the bounding rect
+                        let collisionDetected = false;
+                        
+                        // For pipe type obstacles, check if bird is passing through the gap
+                        if (obstacle.type === 'pipe') {
+                            // Only check for collision if within depth range
+                            if (depthDiff < 25) {
+                                // Check horizontal overlap
+                                if (birdRect.right > obstacleRect.left && birdRect.left < obstacleRect.right) {
+                                    // Get the pipe elements' actual tops and bottoms
+                                    const pipeElements = obstacle.element.querySelectorAll('.pipe-main');
+                                    if (pipeElements.length >= 2) {
+                                        const topPipe = pipeElements[0].getBoundingClientRect();
+                                        const bottomPipe = pipeElements[1].getBoundingClientRect();
+                                        
+                                        // Check if bird collides with top or bottom pipe
+                                        if (birdRect.top < topPipe.bottom || birdRect.bottom > bottomPipe.top) {
+                                            collisionDetected = true;
+                                        }
+                                    }
+                                }
+                            }
+                        } 
+                        // For other obstacle types, use normal collision detection
+                        else if (depthDiff < 25 && 
+                            birdRect.right > obstacleRect.left && 
+                            birdRect.left < obstacleRect.right && 
+                            birdRect.bottom > obstacleRect.top && 
+                            birdRect.top < obstacleRect.bottom) {
+                            collisionDetected = true;
+                        }
+                        
+                        if (collisionDetected) {
+                            endGame();
+                            return;
+                        }
+                    }
+                    
+                    // Score when passing an obstacle (consider depth as well)
+                    if (!obstacle.scored && obstacleLeft + obstacle.width < birdLeft) {
+                        updateScore(1); // 调用更新函数而不是直接修改score
+                        obstacle.scored = true;
+                        
+                        // Add subtle sound for passing obstacle
+                        playSound('jump');
+                    }
+                    
+                    // Adjust visibility and size based on depth difference for enhanced 3D effect
+                    const depthDiff = Math.abs(obstacle.depth - birdDepth);
+                    const maxVisibleDepth = 200;
+                    
+                    // Enhanced depth visualization
+                    let opacity = 1 - (depthDiff / maxVisibleDepth);
+                    opacity = Math.max(0.2, Math.min(1, opacity));
+                    
+                    // Larger scale difference for better depth perception
+                    const depthDirection = obstacle.depth > birdDepth ? 1 : -1;
+                    const scale = 1 - (depthDiff / (MAX_DEPTH * 1.8));
+                    
+                    // Add blur effect for objects far in depth
+                    const blurAmount = Math.min(4, depthDiff / 40);
+                    
+                    // Enhanced 3D transform with depth cues
+                    obstacle.element.style.opacity = opacity;
+                    obstacle.element.style.filter = `blur(${blurAmount}px)`;
+                    obstacle.element.style.transform = `translateZ(${obstacle.depth}px) scale(${scale})`;
+                    
+                    // Add shadow based on depth
+                    if (obstacle.depth < birdDepth) {
+                        // Object is behind the bird (negative Z) - add shadow below
+                        obstacle.element.style.boxShadow = `0 ${5 + Math.min(10, depthDiff/10)}px ${Math.min(15, depthDiff/8)}px rgba(0,0,0,${0.3 + Math.min(0.3, depthDiff/300)})`;
+                    } else {
+                        // Object is in front of bird (positive Z) - add glow
+                        obstacle.element.style.boxShadow = `0 0 ${Math.min(15, depthDiff/10)}px rgba(255,255,255,${0.1 + Math.min(0.2, depthDiff/400)})`;
+                    }
+                }
+            }
+            
+            // Check for coin collection
+            for (let i = 0; i < coins_array.length; i++) {
+                const coin = coins_array[i];
+                let coinLeft = parseFloat(window.getComputedStyle(coin.element).getPropertyValue('left'));
+                
+                // Apply same parallax effect as obstacles
+                const coinDepthDiffFactor = Math.abs(coin.depth - birdDepth) / (MAX_DEPTH * 2);
+                const coinParalaxSpeedFactor = 1 - coinDepthDiffFactor * 0.7;
+                coinLeft -= pipeSpeed * coinParalaxSpeedFactor;
+                
+                if (coinLeft < -30) {
+                    // Remove coins that are off-screen
+                    if (coin.element.parentElement) {
+                        coin.element.parentElement.removeChild(coin.element);
+                    }
+                    coins_array.splice(i, 1);
+                    i--; // Adjust for the removed element
+                } else {
+                    coin.element.style.left = coinLeft + 'px';
+                    
+                    // Enhanced 3D visual for coins
+                    const depthDiff = Math.abs(coin.depth - birdDepth);
+                    const maxVisibleDepth = 200;
+                    let opacity = 1 - (depthDiff / maxVisibleDepth);
+                    opacity = Math.max(0.2, Math.min(1, opacity));
+                    
+                    // Larger scale difference for better depth perception
+                    const scale = 1 - (depthDiff / (MAX_DEPTH * 1.8));
+                    
+                    // Add blur effect for objects far in depth
+                    const blurAmount = Math.min(3, depthDiff / 60);
+                    
+                    // Enhanced animation based on depth
+                    const rotationSpeed = Date.now() % 3600 / 10;
+                    const depthRotation = coin.depth > birdDepth ? rotationSpeed : -rotationSpeed;
+                    
+                    coin.element.style.opacity = opacity;
+                    coin.element.style.filter = `blur(${blurAmount}px)`;
+                    
+                    // Add glow effect based on depth
+                    if (depthDiff < 30) {
+                        coin.element.style.boxShadow = `0 0 15px 5px rgba(255,215,0,0.7)`;
+                    } else {
+                        coin.element.style.boxShadow = `0 0 ${Math.max(5, 15 - depthDiff/10)}px rgba(255,215,0,${Math.max(0.2, 0.5 - depthDiff/300)})`;
+                    }
+                    
+                    coin.element.style.transform = `translateZ(${coin.depth}px) rotateY(${depthRotation}deg) scale(${scale})`;
+                    
+                    // Check if collected (consider depth for collection - need to be within 30 depth units)
+                    let coinRect = coin.element.getBoundingClientRect();
+                    const coinDepthDiff = Math.abs(coin.depth - birdDepth);
+                    
+                    // While rocketing, extend collection range
+                    const collectionRange = isRocketing ? 50 : 30;
+                    
+                    if (
+                        coinDepthDiff < collectionRange &&
+                        birdRect.right > coinRect.left && 
+                        birdRect.left < coinRect.right && 
+                        birdRect.bottom > coinRect.top && 
+                        birdRect.top < coinRect.bottom
+                    ) {
+                        // Collect coin
+                        coins++;
+                        infoPanel.textContent = 'Coins: ' + coins;
+
+                        // add 10 score
+                        updateScore(10);
+                        
+                        // Play coin sound
+                        playSound('coin');
+                        
+                        if (coin.element.parentElement) {
+                            coin.element.parentElement.removeChild(coin.element);
+                        }
+                        coins_array.splice(i, 1);
+                        i--; // Adjust for the removed element
+                        
+                        // Enhanced visual feedback for coin collection
+                        const coinEffect = document.createElement('div');
+                        coinEffect.textContent = '+1';
+                        coinEffect.style.position = 'absolute';
+                        coinEffect.style.top = coinRect.top - gameContainer.getBoundingClientRect().top + 'px';
+                        coinEffect.style.left = coinRect.left - gameContainer.getBoundingClientRect().left + 'px';
+                        coinEffect.style.color = '#FFD700';
+                        coinEffect.style.fontSize = '24px';
+                        coinEffect.style.fontWeight = 'bold';
+                        coinEffect.style.zIndex = '250';
+                        coinEffect.style.pointerEvents = 'none';
+                        coinEffect.style.textShadow = '0 0 10px rgba(255,215,0,0.7)';
+                        coinEffect.style.animation = 'fadeUp 1.2s forwards';
+                        
+                        // Define enhanced fadeUp animation
+                        if (!document.getElementById('coinAnimationStyle')) {
+                            const style = document.createElement('style');
+                            style.id = 'coinAnimationStyle';
+                            style.textContent = `
+                                @keyframes fadeUp {
+                                    0% { transform: translateY(0) scale(1); opacity: 1; }
+                                    50% { transform: translateY(-25px) scale(1.5); opacity: 0.8; }
+                                    100% { transform: translateY(-60px) scale(1); opacity: 0; }
+                                }
+                            `;
+                            document.head.appendChild(style);
+                        }
+                        
+                        gameContainer.appendChild(coinEffect);
+                        
+                        setTimeout(() => {
+                            if (coinEffect.parentElement) {
+                                coinEffect.parentElement.removeChild(coinEffect);
+                            }
+                        }, 1200);
+                    }
+                }
+            }
+            
+            // Check for power-up collection (original shield power-up)
+            if (powerUp.style.display === 'block') {
+                let powerUpRect = powerUp.getBoundingClientRect();
+                let powerUpLeft = parseFloat(window.getComputedStyle(powerUp).getPropertyValue('left'));
+                let powerUpDepth = parseFloat(powerUp.dataset.depth || 0);
+                
+                // Apply parallax effect to powerups too
+                const powerDepthDiffFactor = Math.abs(powerUpDepth - birdDepth) / (MAX_DEPTH * 2);
+                const powerParalaxSpeedFactor = 1 - powerDepthDiffFactor * 0.7;
+                powerUpLeft -= pipeSpeed * powerParalaxSpeedFactor * 0.5; // Power-ups still move slower
+                
+                if (powerUpLeft < -30) {
+                    powerUp.style.display = 'none';
+                } else {
+                    powerUp.style.left = powerUpLeft + 'px';
+                    
+                    // Enhanced visibility based on depth difference
+                    const powerUpDepthDiff = Math.abs(powerUpDepth - birdDepth);
+                    const maxVisibleDepth = 200;
+                    let opacity = 1 - (powerUpDepthDiff / maxVisibleDepth);
+                    opacity = Math.max(0.2, Math.min(1, opacity));
+                    
+                    const scale = 1 - (powerUpDepthDiff / (MAX_DEPTH * 1.8));
+                    
+                    // Add blur effect for objects far in depth
+                    const blurAmount = Math.min(3, powerUpDepthDiff / 60);
+                    
+                    powerUp.style.opacity = opacity;
+                    powerUp.style.filter = `blur(${blurAmount}px)`;
+                    powerUp.style.transform = `translateZ(${powerUpDepth}px) scale(${scale})`;
+                    
+                    // Enhanced glow effect for powerups
+                    const glowIntensity = 0.7 + 0.3 * Math.sin(Date.now() / 200);
+                    powerUp.style.boxShadow = `0 0 15px ${10 * glowIntensity}px rgba(147,112,219,${0.7 * glowIntensity})`;
+                    
+                    // While rocketing, extend collection range
+                    const collectionRange = isRocketing ? 50 : 30;
+                    
+                    // Check if collected (consider depth)
+                    if (
+                        powerUpDepthDiff < collectionRange &&
+                        birdRect.right > powerUpRect.left && 
+                        birdRect.left < powerUpRect.right && 
+                        birdRect.bottom > powerUpRect.top && 
+                        birdRect.top < powerUpRect.bottom
+                    ) {
+                        // Activate shield
+                        hasShield = true;
+                        shieldTime = 300; // About 5 seconds at 60fps
+                        bird.classList.add('shielded');
+                        shieldIndicator.style.display = 'block';
+                        powerUp.style.display = 'none';
+                        
+                        // Play power up sound
+                        playSound('powerUp');
+                        
+                        // Enhanced visual shield activation effect
+                        showPowerUpNotification('SHIELD ACTIVATED!');
+                    }
+                }
+            }
+            
+            // Check for special power-ups collection
+            for (let i = 0; i < powerUps.length; i++) {
+                const powerUp = powerUps[i];
+                let powerUpLeft = parseFloat(window.getComputedStyle(powerUp.element).getPropertyValue('left'));
+                
+                // Apply same parallax effect as obstacles
+                const powerUpDepthDiffFactor = Math.abs(powerUp.depth - birdDepth) / (MAX_DEPTH * 2);
+                const powerUpParalaxSpeedFactor = 1 - powerUpDepthDiffFactor * 0.7;
+                powerUpLeft -= pipeSpeed * powerUpParalaxSpeedFactor * 0.5; // Power-ups move slower
+                
+                if (powerUpLeft < -30) {
+                    // Remove power-ups that are off-screen
+                    if (powerUp.element.parentElement) {
+                        powerUp.element.parentElement.removeChild(powerUp.element);
+                    }
+                    powerUps.splice(i, 1);
+                    i--; // Adjust for the removed element
+                } else {
+                    powerUp.element.style.left = powerUpLeft + 'px';
+                    
+                    // Enhanced 3D visual for power-ups
+                    const depthDiff = Math.abs(powerUp.depth - birdDepth);
+                    const maxVisibleDepth = 200;
+                    let opacity = 1 - (depthDiff / maxVisibleDepth);
+                    opacity = Math.max(0.2, Math.min(1, opacity));
+                    
+                    // Larger scale difference for better depth perception
+                    const scale = 1 - (depthDiff / (MAX_DEPTH * 1.8));
+                    
+                    // Add blur effect for objects far in depth
+                    const blurAmount = Math.min(3, depthDiff / 60);
+                    
+                    powerUp.element.style.opacity = opacity;
+                    powerUp.element.style.filter = `blur(${blurAmount}px)`;
+                    
+                    // Enhanced glow based on power-up type
+                    let glowColor = powerUp.type === 'shrink' ? 'rgba(65, 105, 225, 0.7)' : 'rgba(255, 69, 0, 0.7)';
+                    const glowIntensity = 0.7 + 0.3 * Math.sin(Date.now() / 200);
+                    powerUp.element.style.boxShadow = `0 0 15px ${glowColor}`;
+                    
+                    // Apply 3D transform
+                    powerUp.element.style.transform = `translateZ(${powerUp.depth}px) scale(${scale})`;
+                    
+                    // While rocketing, extend collection range
+                    const collectionRange = isRocketing ? 50 : 30;
+                    
+                    // Check if collected
+                    let powerUpRect = powerUp.element.getBoundingClientRect();
+                    const powerUpDepthDiff = Math.abs(powerUp.depth - birdDepth);
+                    
+                    if (
+                        powerUpDepthDiff < collectionRange &&
+                        birdRect.right > powerUpRect.left && 
+                        birdRect.left < powerUpRect.right && 
+                        birdRect.bottom > powerUpRect.top && 
+                        birdRect.top < powerUpRect.bottom
+                    ) {
+                        // Play power up sound
+                        playSound('powerUp');
+                        
+                        // Apply effect based on power-up type
+                        if (powerUp.type === 'shrink') {
+                            activateShrink();
+                        } else if (powerUp.type === 'rocket') {
+                            activateRocket();
+                        }
+                        
+                        // Remove power-up
+                        if (powerUp.element.parentElement) {
+                            powerUp.element.parentElement.removeChild(powerUp.element);
+                        }
+                        powerUps.splice(i, 1);
+                        i--; // Adjust for the removed element
+                    }
+                }
+            }
+            
+            // Update info panel
+            infoPanel.textContent = 'Coins: ' + coins;
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Create obstacles function with enhanced 3D depth perception
+        function createObstacle() {
+            if (!gameStarted || gameOver) return;
+            
+            // Randomly choose between different obstacle types
+            const obstacleType = Math.random();
+            const obstacleDepth = Math.random() * (MAX_DEPTH * 2) - MAX_DEPTH; // Random depth
+            
+            if (obstacleType < 0.4) {
+                // Create a pair of vertical pipes with a gap
+                const gapHeight = 150 - (level * 3); // Gap gets smaller as level increases
+                const minGapHeight = 100;
+                const actualGapHeight = Math.max(minGapHeight, gapHeight);
+                
+                const topHeight = Math.floor(Math.random() * (gameContainer.clientHeight - actualGapHeight - 100)) + 50;
+                
+                // Create pipe container for easy depth management
+                const pipeContainer = document.createElement('div');
+                pipeContainer.className = 'pipe';
+                pipeContainer.style.width = '60px';
+                pipeContainer.style.height = gameContainer.clientHeight + 'px';
+                pipeContainer.style.left = gameContainer.clientWidth + 'px';
+                pipeContainer.style.top = '0px';
+                
+                // Add depth marker on the pipe for better depth perception
+                const depthMarker = document.createElement('div');
+                depthMarker.style.position = 'absolute';
+                depthMarker.style.width = '100%';
+                depthMarker.style.textAlign = 'center';
+                depthMarker.style.top = (topHeight + actualGapHeight/2) + 'px';
+                depthMarker.style.color = 'white';
+                depthMarker.style.fontSize = '14px';
+                depthMarker.style.fontWeight = 'bold';
+                depthMarker.style.textShadow = '1px 1px 2px black';
+                depthMarker.style.zIndex = '10';
+                depthMarker.textContent = Math.round(obstacleDepth);
+                
+                // Create top pipe main
+                const topPipeMain = document.createElement('div');
+                topPipeMain.className = 'pipe-main';
+                topPipeMain.style.width = '100%';
+                topPipeMain.style.top = '0';
+                topPipeMain.style.left = '0';
+                topPipeMain.style.height = topHeight + 'px';
+                
+                // Create bottom pipe main
+                const bottomPipeMain = document.createElement('div');
+                bottomPipeMain.className = 'pipe-main';
+                bottomPipeMain.style.width = '100%';
+                bottomPipeMain.style.top = (topHeight + actualGapHeight) + 'px';
+                bottomPipeMain.style.left = '0';
+                bottomPipeMain.style.height = (gameContainer.clientHeight - topHeight - actualGapHeight) + 'px';
+                
+                // Add 3D effect with pipe sides - enhanced for better depth perception
+                const topPipeSide = document.createElement('div');
+                topPipeSide.className = 'pipe-side';
+                topPipeSide.style.width = '15px'; // Wider side for better visibility
+                topPipeSide.style.height = topHeight + 'px';
+                topPipeSide.style.top = '0';
+                topPipeSide.style.right = '0';
+                topPipeSide.style.transform = 'translateX(100%) rotateY(90deg)';
+                topPipeSide.style.transformOrigin = 'left';
+                
+                const bottomPipeSide = document.createElement('div');
+                bottomPipeSide.className = 'pipe-side';
+                bottomPipeSide.style.width = '15px'; // Wider side for better visibility
+                bottomPipeSide.style.height = (gameContainer.clientHeight - topHeight - actualGapHeight) + 'px';
+                bottomPipeSide.style.top = (topHeight + actualGapHeight) + 'px';
+                bottomPipeSide.style.right = '0';
+                bottomPipeSide.style.transform = 'translateX(100%) rotateY(90deg)';
+                bottomPipeSide.style.transformOrigin = 'left';
+                
+                // Add depth stripes for better visual depth cues
+                const stripeCount = 5;
+                for (let i = 0; i < stripeCount; i++) {
+                    // Top pipe stripes
+                    const topStripe = document.createElement('div');
+                    topStripe.style.position = 'absolute';
+                    topStripe.style.width = '100%';
+                    topStripe.style.height = '4px';
+                    topStripe.style.backgroundColor = 'rgba(0,0,0,0.2)';
+                    topStripe.style.top = (topHeight * i / stripeCount) + 'px';
+                    topPipeMain.appendChild(topStripe);
+                    
+                    // Bottom pipe stripes
+                    const bottomStripe = document.createElement('div');
+                    bottomStripe.style.position = 'absolute';
+                    bottomStripe.style.width = '100%';
+                    bottomStripe.style.height = '4px';
+                    bottomStripe.style.backgroundColor = 'rgba(0,0,0,0.2)';
+                    bottomStripe.style.top = ((gameContainer.clientHeight - topHeight - actualGapHeight) * i / stripeCount) + 'px';
+                    bottomPipeMain.appendChild(bottomStripe);
+                }
+                
+                // Append pipes to container
+                pipeContainer.appendChild(topPipeMain);
+                pipeContainer.appendChild(bottomPipeMain);
+                pipeContainer.appendChild(topPipeSide);
+                pipeContainer.appendChild(bottomPipeSide);
+                pipeContainer.appendChild(depthMarker);
+                
+                // Add initial 3D transform with depth
+                pipeContainer.style.transform = `translateZ(${obstacleDepth}px)`;
+                
+                // Append to game world
+                gameWorld.appendChild(pipeContainer);
+                
+                // Add to obstacles array
+                obstacles.push({
+                    element: pipeContainer,
+                    width: 60,
+                    depth: obstacleDepth,
+                    scored: false,
+                    type: 'pipe'
+                });
+            } 
+            else if (obstacleType < 0.7) {
+                // Create a moving horizontal obstacle with enhanced 3D appearance
+                const obstacleHeight = 40 + Math.floor(Math.random() * 30);
+                const obstacleWidth = 40 + Math.floor(Math.random() * 80);
+                const obstacleY = Math.floor(Math.random() * (gameContainer.clientHeight - obstacleHeight - 50)) + 25;
+                
+                // Create obstacle container
+                const obstacleContainer = document.createElement('div');
+                obstacleContainer.className = 'obstacle';
+                obstacleContainer.style.width = obstacleWidth + 'px';
+                obstacleContainer.style.height = obstacleHeight + 'px';
+                obstacleContainer.style.top = obstacleY + 'px';
+                obstacleContainer.style.left = gameContainer.clientWidth + 'px';
+                
+                // Add depth marker for better perception
+                const depthMarker = document.createElement('div');
+                depthMarker.style.position = 'absolute';
+                depthMarker.style.width = '100%';
+                depthMarker.style.textAlign = 'center';
+                depthMarker.style.top = '50%';
+                depthMarker.style.transform = 'translateY(-50%)';
+                depthMarker.style.color = 'white';
+                depthMarker.style.fontSize = '14px';
+                depthMarker.style.fontWeight = 'bold';
+                depthMarker.style.textShadow = '1px 1px 2px black';
+                depthMarker.style.zIndex = '10';
+                depthMarker.textContent = Math.round(obstacleDepth);
+                
+                // Create main obstacle with enhanced 3D appearance
+                const obstacleMain = document.createElement('div');
+                obstacleMain.className = 'obstacle-main';
+                obstacleMain.style.width = '100%';
+                obstacleMain.style.height = '100%';
+                
+                // Add texture or pattern for better depth perception
+                obstacleMain.style.backgroundImage = 'linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%)';
+                obstacleMain.style.backgroundSize = '10px 10px';
+                
+                // Add 3D sides effect
+                const obstacleSide = document.createElement('div');
+                obstacleSide.className = 'obstacle-main';
+                obstacleSide.style.width = '15px'; // Wider side for better visibility
+                obstacleSide.style.height = obstacleHeight + 'px';
+                obstacleSide.style.top = '0';
+                obstacleSide.style.right = '0';
+                obstacleSide.style.borderRadius = '0 10px 10px 0';
+                obstacleSide.style.transform = 'translateX(100%) rotateY(90deg)';
+                obstacleSide.style.transformOrigin = 'left';
+                obstacleSide.style.backgroundColor = '#B22222';
+                
+                // Add a top side for better 3D appearance
+                const obstacleTop = document.createElement('div');
+                obstacleTop.className = 'obstacle-main';
+                obstacleTop.style.width = '100%';
+                obstacleTop.style.height = '10px';
+                obstacleTop.style.top = '-10px';
+                obstacleTop.style.left = '0';
+                obstacleTop.style.borderRadius = '10px 10px 0 0';
+                obstacleTop.style.transform = 'rotateX(-90deg)';
+                obstacleTop.style.transformOrigin = 'bottom';
+                obstacleTop.style.backgroundColor = '#D22B2B';
+                
+                obstacleContainer.appendChild(obstacleMain);
+                obstacleContainer.appendChild(obstacleSide);
+                obstacleContainer.appendChild(obstacleTop);
+                obstacleContainer.appendChild(depthMarker);
+                
+                // Add initial 3D transform with depth
+                obstacleContainer.style.transform = `translateZ(${obstacleDepth}px)`;
+                
+                gameWorld.appendChild(obstacleContainer);
+                
+                // Add to obstacles array
+                obstacles.push({
+                    element: obstacleContainer,
+                    width: obstacleWidth,
+                    depth: obstacleDepth,
+                    scored: false,
+                    type: 'obstacle'
+                });
+            }
+            else {
+                // Create a 3D matrix of smaller obstacles with enhanced depth perception
+                const matrixSize = 3 + Math.floor(level / 2); // Increases with level
+                const spacing = 60; // Space between obstacles
+                const obstacleSize = 20;
+                
+                // Random pattern generation
+                const pattern = [];
+                for (let z = 0; z < matrixSize; z++) {
+                    pattern[z] = [];
+                    for (let y = 0; y < matrixSize; y++) {
+                        pattern[z][y] = Math.random() > 0.6; // 60% chance of having an obstacle
+                    }
+                }
+                
+                // Create a safe path through the matrix
+                const safePath = {
+                    z: Math.floor(Math.random() * matrixSize),
+                    y: Math.floor(Math.random() * matrixSize)
+                };
+                
+                // Clear obstacles around safe path
+                for (let z = 0; z < matrixSize; z++) {
+                    for (let y = 0; y < matrixSize; y++) {
+                        const distance = Math.abs(z - safePath.z) + Math.abs(y - safePath.y);
+                        if (distance <= 1) {
+                            pattern[z][y] = false; // Clear obstacles in and adjacent to path
+                        }
+                    }
+                }
+                
+                // Base yPos and zPos for the matrix
+                const baseY = (gameContainer.clientHeight - matrixSize * spacing) / 2;
+                const baseZ = -((matrixSize * spacing) / 2) + (obstacleDepth / 2);
+                
+                // Create matrix container with depth indicator
+                const matrixContainer = document.createElement('div');
+                matrixContainer.className = 'obstacle';
+                matrixContainer.style.width = obstacleSize + 'px';
+                matrixContainer.style.height = matrixSize * spacing + 'px';
+                matrixContainer.style.top = baseY + 'px';
+                matrixContainer.style.left = gameContainer.clientWidth + 'px';
+                
+                // Add a visual depth guide line that runs through the matrix
+                const depthGuideLine = document.createElement('div');
+                depthGuideLine.style.position = 'absolute';
+                depthGuideLine.style.width = '2px';
+                depthGuideLine.style.height = matrixSize * spacing + 'px';
+                depthGuideLine.style.left = (obstacleSize / 2) + 'px';
+                depthGuideLine.style.top = '0';
+                depthGuideLine.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                depthGuideLine.style.zIndex = '1';
+                matrixContainer.appendChild(depthGuideLine);
+                
+                // Create each obstacle in the matrix with enhanced 3D appearance
+                for (let z = 0; z < matrixSize; z++) {
+                    for (let y = 0; y < matrixSize; y++) {
+                        if (pattern[z][y]) {
+                            const matrixItem = document.createElement('div');
+                            matrixItem.className = 'obstacle-main';
+                            matrixItem.style.width = obstacleSize + 'px';
+                            matrixItem.style.height = obstacleSize + 'px';
+                            matrixItem.style.top = (y * spacing) + 'px';
+                            matrixItem.style.left = '0';
+                            
+                            // Add 3D appearance with different colors based on depth
+                            const depthZ = baseZ + (z * spacing);
+                            const depthPercentage = (depthZ + MAX_DEPTH) / (MAX_DEPTH * 2);
+                            const hue = Math.floor(depthPercentage * 360);
+                            matrixItem.style.backgroundColor = `hsl(${hue}, 80%, 60%)`;
+                            matrixItem.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+                            
+                            // Add a small display of its Z position
+                            const depthLabel = document.createElement('div');
+                            depthLabel.style.position = 'absolute';
+                            depthLabel.style.fontSize = '8px';
+                            depthLabel.style.color = 'white';
+                            depthLabel.style.textAlign = 'center';
+                            depthLabel.style.width = '100%';
+                            depthLabel.style.top = '50%';
+                            depthLabel.style.transform = 'translateY(-50%)';
+                            depthLabel.style.textShadow = '1px 1px 1px black';
+                            depthLabel.textContent = Math.round(depthZ);
+                            matrixItem.appendChild(depthLabel);
+                            
+                            // Apply 3D transform
+                            matrixItem.style.transform = `translateZ(${depthZ}px)`;
+                            matrixContainer.appendChild(matrixItem);
+                        } else if (y === safePath.y && z === safePath.z) {
+                            // Highlight the safe path with a subtle indicator
+                            const safepathMarker = document.createElement('div');
+                            safepathMarker.style.position = 'absolute';
+                            safepathMarker.style.width = obstacleSize * 1.5 + 'px';
+                            safepathMarker.style.height = obstacleSize * 1.5 + 'px';
+                            safepathMarker.style.top = (y * spacing - obstacleSize * 0.25) + 'px';
+                            safepathMarker.style.left = -obstacleSize * 0.25 + 'px';
+                            safepathMarker.style.borderRadius = '50%';
+                            safepathMarker.style.backgroundColor = 'transparent';
+                            safepathMarker.style.border = '2px dashed rgba(255,255,255,0.3)';
+                            safepathMarker.style.transform = `translateZ(${baseZ + (z * spacing)}px)`;
+                            matrixContainer.appendChild(safepathMarker);
+                        }
+                    }
+                }
+                
+                // Apply initial transform with depth
+                matrixContainer.style.transform = `translateZ(${obstacleDepth}px)`;
+                
+                gameWorld.appendChild(matrixContainer);
+                
+                // Add to obstacles array
+                obstacles.push({
+                    element: matrixContainer,
+                    width: obstacleSize,
+                    depth: obstacleDepth,
+                    scored: false,
+                    type: 'matrix'
+                });
+            }
+        }
+
+        // Create coins function with enhanced 3D effect
+        function createCoin() {
+            if (!gameStarted || gameOver) return;
+            
+            console.log("Creating coin");
+            const coinY = Math.floor(Math.random() * (gameContainer.clientHeight - 30 - 50)) + 25;
+            const coinDepth = Math.random() * (MAX_DEPTH * 2) - MAX_DEPTH; // Random depth
+            
+            const coin = document.createElement('div');
+            coin.className = 'coin';
+            coin.style.top = coinY + 'px';
+            coin.style.left = gameContainer.clientWidth + 'px';
+            coin.style.transform = `translateZ(${coinDepth}px)`;
+            
+            // Add depth marker for better perception
+            const depthMarker = document.createElement('div');
+            depthMarker.style.position = 'absolute';
+            depthMarker.style.width = '100%';
+            depthMarker.style.textAlign = 'center';
+            depthMarker.style.top = '-15px';
+            depthMarker.style.color = 'white';
+            depthMarker.style.fontSize = '10px';
+            depthMarker.style.fontWeight = 'bold';
+            depthMarker.style.textShadow = '1px 1px 2px black';
+            depthMarker.style.zIndex = '10';
+            depthMarker.textContent = Math.round(coinDepth);
+            
+            coin.appendChild(depthMarker);
+            
+            // Add 3D effect with brighter edges
+            const coinInner = document.createElement('div');
+            coinInner.style.position = 'absolute';
+            coinInner.style.width = '80%';
+            coinInner.style.height = '80%';
+            coinInner.style.top = '10%';
+            coinInner.style.left = '10%';
+            coinInner.style.borderRadius = '50%';
+            coinInner.style.backgroundColor = '#FFD700';
+            coinInner.style.background = 'radial-gradient(circle at 30% 30%, #FFEB3B, #FFC107 50%, #FF8F00)';
+            
+            coin.appendChild(coinInner);
+            
+            gameWorld.appendChild(coin);
+            
+            // Add to coins array
+            coins_array.push({
+                element: coin,
+                depth: coinDepth
+            });
+        }
+        
+        // Create power-up function with enhanced 3D effect
+        function createPowerUp() {
+            if (!gameStarted || gameOver || powerUp.style.display === 'block') return;
+            
+            console.log("Creating shield power-up");
+            const powerUpY = Math.floor(Math.random() * (gameContainer.clientHeight - 30 - 50)) + 25;
+            const powerUpDepth = Math.random() * (MAX_DEPTH * 2) - MAX_DEPTH; // Random depth
+            
+            powerUp.style.top = powerUpY + 'px';
+            powerUp.style.left = gameContainer.clientWidth + 'px';
+            powerUp.style.display = 'block';
+            powerUp.style.transform = `translateZ(${powerUpDepth}px)`;
+            powerUp.dataset.depth = powerUpDepth;
+            
+            // Clear any existing content
+            powerUp.innerHTML = '';
+            
+            // Add depth marker
+            const depthMarker = document.createElement('div');
+            depthMarker.style.position = 'absolute';
+            depthMarker.style.width = '100%';
+            depthMarker.style.textAlign = 'center';
+            depthMarker.style.top = '-15px';
+            depthMarker.style.color = 'white';
+            depthMarker.style.fontSize = '10px';
+            depthMarker.style.fontWeight = 'bold';
+            depthMarker.style.textShadow = '1px 1px 2px black';
+            depthMarker.style.zIndex = '10';
+            depthMarker.textContent = Math.round(powerUpDepth);
+            
+            // Add shield icon inside
+            const shieldIcon = document.createElement('div');
+            shieldIcon.style.position = 'absolute';
+            shieldIcon.style.width = '60%';
+            shieldIcon.style.height = '60%';
+            shieldIcon.style.top = '20%';
+            shieldIcon.style.left = '20%';
+            shieldIcon.style.borderRadius = '50%';
+            shieldIcon.style.backgroundColor = 'rgba(255,255,255,0.5)';
+            shieldIcon.style.boxShadow = 'inset 0 0 5px rgba(255,255,255,0.8)';
+            shieldIcon.style.border = '2px solid rgba(255,255,255,0.7)';
+            
+            powerUp.appendChild(depthMarker);
+            powerUp.appendChild(shieldIcon);
+        }
+        
+        // Create new power-ups
+        function createShrinkPowerUp() {
+            if (!gameStarted || gameOver) return;
+            
+            console.log("Creating shrink power-up");
+            const powerUpY = Math.floor(Math.random() * (gameContainer.clientHeight - 30 - 50)) + 25;
+            const powerUpDepth = Math.random() * (MAX_DEPTH * 2) - MAX_DEPTH; // Random depth
+            
+            const powerUp = document.createElement('div');
+            powerUp.className = 'shrink-pill';
+            powerUp.style.top = powerUpY + 'px';
+            powerUp.style.left = gameContainer.clientWidth + 'px';
+            
+            // Add depth marker for better perception
+            const depthMarker = document.createElement('div');
+            depthMarker.style.position = 'absolute';
+            depthMarker.style.width = '100%';
+            depthMarker.style.textAlign = 'center';
+            depthMarker.style.top = '-15px';
+            depthMarker.style.color = 'white';
+            depthMarker.style.fontSize = '10px';
+            depthMarker.style.fontWeight = 'bold';
+            depthMarker.style.textShadow = '1px 1px 2px black';
+            depthMarker.textContent = Math.round(powerUpDepth);
+            
+            // Add label "S" for shrink
+            const label = document.createElement('div');
+            label.style.position = 'absolute';
+            label.style.width = '100%';
+            label.style.textAlign = 'center';
+            label.style.top = '50%';
+            label.style.transform = 'translateY(-50%)';
+            label.style.color = 'white';
+            label.style.fontSize = '12px';
+            label.style.fontWeight = 'bold';
+            label.style.textShadow = '1px 1px 2px black';
+            label.textContent = 'S';
+            
+            powerUp.appendChild(depthMarker);
+            powerUp.appendChild(label);
+            gameWorld.appendChild(powerUp);
+            
+            // Add to power-ups array
+            powerUps.push({
+                element: powerUp,
+                type: 'shrink',
+                depth: powerUpDepth
+            });
+        }
+        
+        function createRocketPowerUp() {
+            if (!gameStarted || gameOver) return;
+            
+            console.log("Creating rocket power-up");
+            const powerUpY = Math.floor(Math.random() * (gameContainer.clientHeight - 30 - 50)) + 25;
+            const powerUpDepth = Math.random() * (MAX_DEPTH * 2) - MAX_DEPTH; // Random depth
+            
+            const powerUp = document.createElement('div');
+            powerUp.className = 'rocket';
+            powerUp.style.top = powerUpY + 'px';
+            powerUp.style.left = gameContainer.clientWidth + 'px';
+            
+            // Add depth marker for better perception
+            const depthMarker = document.createElement('div');
+            depthMarker.style.position = 'absolute';
+            depthMarker.style.width = '100%';
+            depthMarker.style.textAlign = 'center';
+            depthMarker.style.top = '-15px';
+            depthMarker.style.color = 'white';
+            depthMarker.style.fontSize = '10px';
+            depthMarker.style.fontWeight = 'bold';
+            depthMarker.style.textShadow = '1px 1px 2px black';
+            depthMarker.textContent = Math.round(powerUpDepth);
+            
+            // Add label "R" for rocket
+            const label = document.createElement('div');
+            label.style.position = 'absolute';
+            label.style.width = '100%';
+            label.style.textAlign = 'center';
+            label.style.top = '50%';
+            label.style.transform = 'translateY(-50%)';
+            label.style.color = 'white';
+            label.style.fontSize = '12px';
+            label.style.fontWeight = 'bold';
+            label.style.textShadow = '1px 1px 2px black';
+            label.textContent = 'R';
+            
+            powerUp.appendChild(depthMarker);
+            powerUp.appendChild(label);
+            gameWorld.appendChild(powerUp);
+            
+            // Add to power-ups array
+            powerUps.push({
+                element: powerUp,
+                type: 'rocket',
+                depth: powerUpDepth
+            });
+        }
+        
+        // Randomly create power-ups
+        // 修改createRandomPowerUp函数，确保所有类型的能力道具都能生成
+        function createRandomPowerUp() {
+            if (!gameStarted || gameOver) return;
+            
+            console.log("Attempting to create a random power-up");
+            
+            const randomType = Math.random();
+            if (randomType < 0.33) {
+                console.log("Creating shield power-up");
+                createPowerUp(); // Shield
+            } else if (randomType < 0.77) {
+                console.log("Creating shrink power-up");
+                createShrinkPowerUp(); // Shrink
+            } else {
+                console.log("Creating rocket power-up");
+                createRocketPowerUp(); // Rocket
+            }
+        }
+        
+        // Power-up activation functions
+        function activateShrink() {
+            // Shrink the bird
+            isShrunk = true;
+            shrinkTime = 300; // 5 seconds
+            
+            // Visually shrink the bird (50% size)
+            bird.style.width = (originalBirdSize.width * 0.5) + 'px';
+            bird.style.height = (originalBirdSize.height * 0.5) + 'px';
+            
+            // Show notification
+            showPowerUpNotification('SHRINK ACTIVE!');
+        }
+        
+        // 修改火箭激活函数，让火箭更大并保持屏幕居中
+        function activateRocket() {
+            // Activate rocket mode
+            isRocketing = true;
+            
+            // Store original position for restoration later
+            const originalLeft = parseFloat(window.getComputedStyle(bird).getPropertyValue('left'));
+            const originalTop = parseFloat(window.getComputedStyle(bird).getPropertyValue('top'));
+            
+            // Make the bird much larger (50% of screen height)
+            const screenHeight = gameContainer.clientHeight;
+            const rocketHeight = screenHeight * 0.5; // 50% of screen height
+            const rocketWidth = rocketHeight * (originalBirdSize.width / originalBirdSize.height); // Keep aspect ratio
+            
+            // Apply rocket boost animation
+            bird.classList.add('rocket-boost');
+            
+            // Resize and position the bird (center of screen)
+            bird.style.width = rocketWidth + 'px';
+            bird.style.height = rocketHeight + 'px';
+            
+            // Show notification
+            showPowerUpNotification('ROCKET BOOST!');
+            
+            // Play rocket sound
+            playSound('powerUp');
+            
+            // After a short delay, start fast horizontal movement
+            setTimeout(() => {
+                // Add rocket trail effect
+                const createRocketTrail = setInterval(() => {
+                    if (!isRocketing || gameOver) {
+                        clearInterval(createRocketTrail);
+                        return;
+                    }
+                    
+                    const birdRect = bird.getBoundingClientRect();
+                    const trailParticle = document.createElement('div');
+                    trailParticle.style.position = 'absolute';
+                    trailParticle.style.width = '20px'; // Larger particles
+                    trailParticle.style.height = '20px';
+                    trailParticle.style.backgroundColor = `hsl(${Math.random() * 60}, 100%, 60%)`;
+                    trailParticle.style.borderRadius = '50%';
+                    trailParticle.style.opacity = '0.8';
+                    trailParticle.style.zIndex = '90';
+                    
+                    const gameContainerRect = gameContainer.getBoundingClientRect();
+                    trailParticle.style.left = (birdRect.left - gameContainerRect.left - 20) + 'px';
+                    trailParticle.style.top = (birdRect.top - gameContainerRect.top + (Math.random() * rocketHeight)) + 'px';
+                    gameContainer.appendChild(trailParticle);
+                    
+                    // Animate trail particle
+                    trailParticle.style.animation = 'fadeOut 0.8s forwards';
+                    
+                    // Define fadeOut animation if not defined
+                    if (!document.getElementById('trailAnimationStyle')) {
+                        const style = document.createElement('style');
+                        style.id = 'trailAnimationStyle';
+                        style.textContent = `
+                            @keyframes fadeOut {
+                                0% { transform: translateX(0); opacity: 0.8; }
+                                100% { transform: translateX(-50px); opacity: 0; }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                    
+                    // Remove particle after animation
+                    setTimeout(() => {
+                        if (trailParticle.parentElement) {
+                            trailParticle.parentElement.removeChild(trailParticle);
+                        }
+                    }, 800);
+                }, 30); // More frequent particles
+                
+                // End rocket boost after 5 seconds
+                setTimeout(() => {
+                    isRocketing = false;
+                    bird.classList.remove('rocket-boost');
+                    clearInterval(createRocketTrail);
+                    
+                    // Restore original size
+                    bird.style.width = originalBirdSize.width + 'px';
+                    bird.style.height = originalBirdSize.height + 'px';
+                    
+                    // Show notification
+                    showPowerUpNotification('Rocket Completed!');
+                }, 5000);
+            }, 500);
+        }
+
+        
+        // Create explosion effect
+        function createExplosion(x, y, depth) {
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            
+            const gameContainerRect = gameContainer.getBoundingClientRect();
+            explosion.style.left = (x - gameContainerRect.left) + 'px';
+            explosion.style.top = (y - gameContainerRect.top) + 'px';
+            explosion.style.transform = `translateZ(${depth}px)`;
+            
+            gameContainer.appendChild(explosion);
+            
+            // Remove explosion after animation completes
+            setTimeout(() => {
+                if (explosion.parentElement) {
+                    explosion.parentElement.removeChild(explosion);
+                }
+            }, 500);
+        }
+        
+        // Show power up notification
+        function showPowerUpNotification(text) {
+            powerUpNotification.textContent = text;
+            powerUpNotification.style.display = 'block';
+            
+            // Hide notification after 2 seconds
+            setTimeout(() => {
+                powerUpNotification.style.display = 'none';
+            }, 2000);
+        }
+        
+        // 在游戏结束函数中停止音乐
+        function endGame() {
+            gameStarted = false;
+            gameOver = true;
+            
+            // 停止音乐
+            MusicGenerator.stop();
+            
+            finalScoreDisplay.textContent = score;
+            finalLevelDisplay.textContent = level;
+            coinsCollectedDisplay.textContent = coins;
+            gameOverScreen.style.display = 'block';
+            
+            // 添加回车提示
+            const enterKeyPrompt = document.createElement('p');
+            enterKeyPrompt.textContent = 'Press Enter to restart';
+            enterKeyPrompt.style.color = '#FFD700';
+            enterKeyPrompt.style.marginBottom = '15px';
+            
+            // 确保不会重复添加提示
+            const existingPrompt = gameOverScreen.querySelector('p[style*="FFD700"]');
+            if (!existingPrompt) {
+                // 在输入框之前插入提示
+                const nameInput = gameOverScreen.querySelector('#player-name');
+                gameOverScreen.insertBefore(enterKeyPrompt, nameInput);
+            }
+            
+            // 播放游戏结束音效
+            playSound('explosion');
+            
+            clearInterval(obstacleInterval);
+            clearInterval(coinInterval);
+            clearInterval(powerUpInterval);
+            clearInterval(levelUpdateInterval);
+            clearInterval(cloudInterval);
+        }
+
+        // 修改分数更新函数以更新难度
+        function updateScore(points) {
+            // 新增分数倍率（Multiplier）让玩家主动追求高难度（"虽然更难但分数翻倍！"）
+            const currentLevel = DifficultySystem.levels[DifficultySystem.currentLevelIndex];
+            score += points*currentLevel.multiplier; 
+            scoreDisplay.textContent = `Score: ${score}`;
+            
+            // 根据分数更新难度
+            DifficultySystem.updateDifficulty(score);
+        }
+
+        // 在移动障碍物函数中应用游戏速度
+        function moveObstacles() {
+            if (!gameStarted || gameOver) return;
+            
+            const obstacles = document.querySelectorAll('.obstacle');
+            obstacles.forEach(obstacle => {
+                let obstacleLeft = parseFloat(window.getComputedStyle(obstacle).getPropertyValue('left'));
+                
+                // 根据游戏速度调整障碍物移动速度
+                obstacleLeft -= 5 * gameSpeed;
+                
+                if (obstacleLeft < -50) {
+                    obstacle.remove();
+                    updateScore(10);
+                } else {
+                    obstacle.style.left = obstacleLeft + 'px';
+                    
+                    // 碰撞检测不变
+                    if (checkCollision(bird, obstacle) && !isInvincible && !isRocketing) {
+                        endGame();
+                        return;
+                    }
+                }
+            });
+            
+            // 移动金币
+            const coins = document.querySelectorAll('.coin');
+            coins.forEach(coin => {
+                let coinLeft = parseFloat(window.getComputedStyle(coin).getPropertyValue('left'));
+                
+                // 根据游戏速度调整金币移动速度
+                coinLeft -= 5 * gameSpeed;
+                
+                if (coinLeft < -50) {
+                    coin.remove();
+                } else {
+                    coin.style.left = coinLeft + 'px';
+                    
+                    // 金币收集逻辑不变
+                    if (checkCollision(bird, coin)) {
+                        collectCoin(coin);
+                    }
+                }
+            });
+            
+            // 移动能力道具
+            const powerUps = document.querySelectorAll('.power-up');
+            powerUps.forEach(powerUp => {
+                let powerUpLeft = parseFloat(window.getComputedStyle(powerUp).getPropertyValue('left'));
+                
+                // 根据游戏速度调整道具移动速度
+                powerUpLeft -= 5 * gameSpeed;
+                
+                if (powerUpLeft < -50) {
+                    powerUp.remove();
+                } else {
+                    powerUp.style.left = powerUpLeft + 'px';
+                    
+                    // 道具收集逻辑不变
+                    if (checkCollision(bird, powerUp)) {
+                        collectPowerUp(powerUp);
+                    }
+                }
+            });
+            
+            // 移动云朵
+            const clouds = document.querySelectorAll('.cloud');
+            clouds.forEach(cloud => {
+                let cloudLeft = parseFloat(window.getComputedStyle(cloud).getPropertyValue('left'));
+                let cloudSpeed = parseFloat(cloud.dataset.speed);
+                
+                // 根据游戏速度调整云朵移动速度
+                cloudLeft -= cloudSpeed * gameSpeed * 0.5; // 云移动慢一点
+                
+                if (cloudLeft < -200) {
+                    cloud.remove();
+                } else {
+                    cloud.style.left = cloudLeft + 'px';
+                }
+            });
+            
+            requestAnimationFrame(moveObstacles);
+        }
+        
+        // Save score
+        function saveScore() {
+            const playerName = document.getElementById('player-name').value.trim() || 'Anonymous';
+            
+            highScores.push({
+                name: playerName,
+                score: score,
+                level: level,
+                coins: coins
+            });
+            
+            updateHighScores();
+            document.getElementById('player-name').value = '';
+        }
+        
+        // Reset game
+        function resetGame() {
+            gameStarted = false;
+            gameOver = false;
+            gameOverScreen.style.display = 'none';
+            
+            // 停止所有计时器
+            clearInterval(obstacleInterval);
+            clearInterval(coinInterval);
+            clearInterval(powerUpInterval);
+            clearInterval(levelUpdateInterval);
+            clearInterval(cloudInterval);
+            
+            // 清除所有现有障碍物、金币、能力道具和云
+            clearAllGameElements();
+            
+            // 重置鸟的位置和状态
+            resetBirdPosition();
+            
+            // 重新开始游戏
+            startGame();
+        }
+
+        // 新增函数：清除所有游戏元素
+        function clearAllGameElements() {
+            // 清除所有障碍物
+            const obstacleElements = document.querySelectorAll('.obstacle, .pipe');
+            obstacleElements.forEach(obstacle => obstacle.remove());
+            obstacles = []; // 清空数组
+            
+            // 清除所有金币
+            const coinElements = document.querySelectorAll('.coin');
+            coinElements.forEach(coin => coin.remove());
+            coins_array = []; // 清空数组
+            
+            // 清除所有能力道具
+            const powerUpElements = document.querySelectorAll('.shrink-pill, .rocket');
+            powerUpElements.forEach(powerUp => powerUp.remove());
+            powerUps = []; // 清空数组
+            powerUp.style.display = 'none'; // 隐藏shield powerUp
+            
+            // 清除所有云
+            const cloudElements = document.querySelectorAll('.cloud');
+            cloudElements.forEach(cloud => cloud.remove());
+            clouds = []; // 清空数组
+            
+            // 清除所有粒子效果
+            const particles = document.querySelectorAll('.particle, .explosion');
+            particles.forEach(particle => particle.remove());
+            
+            console.log("All game elements cleared");
+        }
+
+        // 重置鸟的位置和状态
+        function resetBirdPosition() {
+            // 重置位置到初始值
+            bird.style.top = '200px';
+            bird.style.left = '100px';
+            
+            // 重置变换和大小
+            bird.style.transform = 'rotate(0deg) translateZ(0)';
+            bird.style.width = originalBirdSize.width + 'px';
+            bird.style.height = originalBirdSize.height + 'px';
+            
+            // 移除所有可能的特效类
+            bird.classList.remove('rocket-boost', 'invincible-effect');
+            
+            // 重置状态变量
+            verticalVelocity = 0;
+            horizontalVelocity = 0;
+            depthVelocity = 0;
+            birdDepth = 0;
+            isInvincible = false;
+            isRocketing = false;
+            
+            console.log("Bird position and state reset");
+        }
+
+
+        
+        // Handle key press - UPDATED FOR NEW CONTROL SCHEME
+        // 添加按回车键重新开始游戏的功能
+        document.addEventListener('keydown', function(event) {
+            if (event.code === 'Enter') {
+                event.preventDefault();
+                if (gameOver) {
+                    // 游戏结束状态下按Enter重置游戏
+                    resetGame();
+                } else if (!gameStarted) {
+                    // 游戏未开始状态下按Enter开始游戏，使用倒计时
+                    startGameWithCountdown();
+                }
+            }
+                    
+            if (gameStarted && !gameOver) {
+                switch (event.code) {
+                    case 'KeyW': // Move forward (up)
+                        event.preventDefault();
+                        keys.forward = true;
+                        break;
+                    case 'KeyS': // Move backward (down)
+                        event.preventDefault();
+                        keys.backward = true;
+                        break;
+                    case 'KeyA': // Move left
+                        event.preventDefault();
+                        keys.left = true;
+                        break;
+                    case 'KeyD': // Move right
+                        event.preventDefault();
+                        keys.right = true;
+                        break;
+                    case 'ArrowUp': // Move up in 3D space (increase Z)
+                        event.preventDefault();
+                        keys.up = true;
+                        break;
+                    case 'ArrowDown': // Move down in 3D space (decrease Z)
+                        event.preventDefault();
+                        keys.down = true;
+                        break;
+                    case 'Space': // Dash
+                        event.preventDefault();
+                        keys.dash = true;
+                        break;
+                }
+            }
+        });
+        
+        // Handle key up - UPDATED FOR NEW CONTROL SCHEME
+        document.addEventListener('keyup', function(event) {
+            if (gameStarted && !gameOver) {
+                switch (event.code) {
+                    case 'KeyW': // Move forward (up)
+                        keys.forward = false;
+                        break;
+                    case 'KeyS': // Move backward (down)
+                        keys.backward = false;
+                        break;
+                    case 'KeyA': // Move left
+                        keys.left = false;
+                        break;
+                    case 'KeyD': // Move right
+                        keys.right = false;
+                        break;
+                    case 'ArrowUp': // Move up in 3D space (increase Z)
+                        keys.up = false;
+                        break;
+                    case 'ArrowDown': // Move down in 3D space (decrease Z)
+                        keys.down = false;
+                        break;
+                    case 'Space': // Dash
+                        keys.dash = false;
+                        break;
+                }
+            }
+        });
+        
+        // For mobile - touch controls with custom joystick
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchIdentifier = null;
+        
+        // Create virtual joystick with improved appearance
+        const createVirtualJoystick = () => {
+            const joystickContainer = document.createElement('div');
+            joystickContainer.id = 'virtual-joystick';
+            joystickContainer.style.position = 'absolute';
+            joystickContainer.style.bottom = '80px';
+            joystickContainer.style.left = '80px';
+            joystickContainer.style.width = '120px';
+            joystickContainer.style.height = '120px';
+            joystickContainer.style.borderRadius = '50%';
+            joystickContainer.style.backgroundColor = 'rgba(0,0,0,0.3)';
+            joystickContainer.style.border = '2px solid rgba(100,149,237,0.5)';
+            joystickContainer.style.boxShadow = 'inset 0 0 10px rgba(100,149,237,0.3), 0 0 15px rgba(0,0,0,0.5)';
+            joystickContainer.style.zIndex = '400';
+            joystickContainer.style.display = 'none';
+            
+            const joystickKnob = document.createElement('div');
+            joystickKnob.id = 'joystick-knob';
+            joystickKnob.style.position = 'absolute';
+            joystickKnob.style.top = '50%';
+            joystickKnob.style.left = '50%';
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+            joystickKnob.style.width = '50px';
+            joystickKnob.style.height = '50px';
+            joystickKnob.style.borderRadius = '50%';
+            joystickKnob.style.backgroundImage = 'radial-gradient(circle at 40% 40%, #6495ED, #4682B4)';
+            joystickKnob.style.boxShadow = '0 0 10px rgba(100,149,237,0.7), inset 0 0 5px rgba(255,255,255,0.5)';
+            
+            joystickContainer.appendChild(joystickKnob);
+            document.body.appendChild(joystickContainer);
+            
+            return {
+                container: joystickContainer,
+                knob: joystickKnob
+            };
+        };
+        
+        const virtualJoystick = createVirtualJoystick();
+        
+        // For touch devices create mobile controls
+        if ('ontouchstart' in window) {
+            gameContainer.addEventListener('touchstart', function(event) {
+                if (!gameStarted && !gameOver) {
+                    event.preventDefault();
+                    startGame();
+                    return;
+                }
+                
+                if (gameStarted && !gameOver) {
+                    // First touch controls X/Y movement
+                    if (touchIdentifier === null) {
+                        const touch = event.touches[0];
+                        touchStartX = touch.clientX;
+                        touchStartY = touch.clientY;
+                        touchIdentifier = touch.identifier;
+                        
+                        // Show virtual joystick
+                        virtualJoystick.container.style.display = 'block';
+                        virtualJoystick.container.style.left = (touchStartX - 60) + 'px';
+                        virtualJoystick.container.style.top = (touchStartY - 60) + 'px';
+                    }
+                    // Second touch controls depth (Z)
+                    else if (event.touches.length > 1) {
+                        const depthTouch = event.touches[1];
+                        const initialY = depthTouch.clientY;
+                        
+                        // Starting Y position determines up/down in 3D space
+                        const screenCenterY = window.innerHeight / 2;
+                        keys.up = initialY < screenCenterY;
+                        keys.down = initialY > screenCenterY;
+                    }
+                }
+            });
+            
+            document.addEventListener('touchmove', function(event) {
+                if (gameStarted && !gameOver) {
+                    event.preventDefault();
+                    
+                    // Handle joystick for first touch - controls X/Y movement
+                    for (let i = 0; i < event.touches.length; i++) {
+                        const touch = event.touches[i];
+                        
+                        if (touch.identifier === touchIdentifier) {
+                            const diffX = touch.clientX - touchStartX;
+                            const diffY = touch.clientY - touchStartY;
+                            
+                            // Move joystick knob
+                            const maxDistance = 40;
+                            const distance = Math.min(maxDistance, Math.sqrt(diffX * diffX + diffY * diffY));
+                            const angle = Math.atan2(diffY, diffX);
+                            
+                            const knobX = Math.cos(angle) * distance;
+                            const knobY = Math.sin(angle) * distance;
+                            
+                            virtualJoystick.knob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+                            
+                            // Reset all X/Y directions
+                            keys.forward = false;
+                            keys.backward = false;
+                            keys.left = false;
+                            keys.right = false;
+                            
+                            // Set direction based on joystick position - UPDATED FOR NEW CONTROL SCHEME
+                            if (distance > 10) {  // Add a small dead zone
+                                keys.left = diffX < -10;
+                                keys.right = diffX > 10;
+                                keys.forward = diffY < -10;  // W - up
+                                keys.backward = diffY > 10;  // S - down
+                            }
+                        }
+                        // Handle depth control (Z) for second touch
+                        else if (event.touches.length > 1) {
+                            const depthTouch = event.touches[1];
+                            const screenCenterY = window.innerHeight / 2;
+                            
+                            // Second finger Y position controls depth (Z)
+                            keys.up = depthTouch.clientY < screenCenterY;    // Arrow Up - increase Z
+                            keys.down = depthTouch.clientY > screenCenterY;  // Arrow Down - decrease Z
+                        }
+                    }
+                }
+            });
+            
+            document.addEventListener('touchend', function(event) {
+                if (gameStarted && !gameOver) {
+                    // Check which touch ended
+                    let depthTouchEnded = true;
+                    let mainTouchEnded = true;
+                    
+                    // See if the main touch (identifier) has ended
+                    for (let i = 0; i < event.touches.length; i++) {
+                        if (event.touches[i].identifier === touchIdentifier) {
+                            mainTouchEnded = false;
+                        } else {
+                            depthTouchEnded = false;
+                        }
+                    }
+                    
+                    if (depthTouchEnded) {
+                        keys.up = false;
+                        keys.down = false;
+                    }
+                    
+                    if (mainTouchEnded) {
+                        keys.forward = false;
+                        keys.backward = false;
+                        keys.left = false;
+                        keys.right = false;
+                        touchIdentifier = null;
+                        
+                        // Hide joystick
+                        virtualJoystick.container.style.display = 'none';
+                        virtualJoystick.knob.style.transform = 'translate(-50%, -50%)';
+                    }
+                }
+            });
+            
+            // Add mobile depth buttons with improved appearance
+            const createDepthButtons = () => {
+                const buttonsContainer = document.createElement('div');
+                buttonsContainer.style.position = 'fixed';
+                buttonsContainer.style.right = '20px';
+                buttonsContainer.style.bottom = '80px';
+                buttonsContainer.style.zIndex = '500';
+                buttonsContainer.style.display = 'flex';
+                buttonsContainer.style.flexDirection = 'column';
+                
+                const forwardBtn = document.createElement('button');
+                forwardBtn.textContent = 'Depth ↑';
+                forwardBtn.style.marginBottom = '10px';
+                forwardBtn.style.padding = '15px';
+                forwardBtn.style.borderRadius = '10px';
+                forwardBtn.style.backgroundColor = '#4169E1';
+                forwardBtn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3), inset 0 0 5px rgba(255,255,255,0.3)';
+                
+                const backwardBtn = document.createElement('button');
+                backwardBtn.textContent = 'Depth ↓';
+                backwardBtn.style.padding = '15px';
+                backwardBtn.style.borderRadius = '10px';
+                backwardBtn.style.backgroundColor = '#4169E1';
+                backwardBtn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3), inset 0 0 5px rgba(255,255,255,0.3)';
+                
+                const dashBtn = document.createElement('button');
+                dashBtn.textContent = 'DASH';
+                dashBtn.style.marginTop = '10px';
+                dashBtn.style.padding = '15px';
+                dashBtn.style.borderRadius = '10px';
+                dashBtn.style.backgroundColor = '#FF6347';
+                dashBtn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3), inset 0 0 5px rgba(255,255,255,0.3)';
+                
+                buttonsContainer.appendChild(forwardBtn);
+                buttonsContainer.appendChild(backwardBtn);
+                buttonsContainer.appendChild(dashBtn);
+                
+                document.body.appendChild(buttonsContainer);
+                
+                // Touch events for buttons - UPDATED FOR NEW CONTROL SCHEME
+                forwardBtn.addEventListener('touchstart', (e) => {
+                    if (gameStarted && !gameOver) {
+                        e.preventDefault();
+                        keys.up = true;  // Move up in Z space
+                    }
+                });
+                
+                forwardBtn.addEventListener('touchend', () => {
+                    if (gameStarted && !gameOver) {
+                        keys.up = false;
+                    }
+                });
+                
+                backwardBtn.addEventListener('touchstart', (e) => {
+                    if (gameStarted && !gameOver) {
+                        e.preventDefault();
+                        keys.down = true;  // Move down in Z space
+                    }
+                });
+                
+                backwardBtn.addEventListener('touchend', () => {
+                    if (gameStarted && !gameOver) {
+                        keys.down = false;
+                    }
+                });
+                
+                dashBtn.addEventListener('touchstart', (e) => {
+                    if (gameStarted && !gameOver) {
+                        e.preventDefault();
+                        keys.dash = true;
+                    }
+                });
+                
+                dashBtn.addEventListener('touchend', () => {
+                    if (gameStarted && !gameOver) {
+                        keys.dash = false;
+                    }
+                });
+            };
+            
+            createDepthButtons();
+        }
+    </script>
+</body>
+</html>
